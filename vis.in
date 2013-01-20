@@ -1,0 +1,12 @@
+[density]
+
+
+[tfromh]
+min = 1.e7
+max = 8.e8
+
+
+[magvel]
+log = 1
+
+
