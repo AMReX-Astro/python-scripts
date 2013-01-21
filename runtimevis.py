@@ -1,20 +1,5 @@
 #!/usr/bin/env python
 
-import matplotlib
-matplotlib.use('Agg')   # this is important for batch mode on machines w/o a display
-import numpy
-import pylab
-import os
-import sys
-import getopt
-import ConfigParser
-import fsnapshot
-
-import math
-import string
-from mpl_toolkits.axes_grid1 import ImageGrid
-
-
 # support doing runtime visualization in 2-d.
 #
 # a vis.in file is read in that is in the form
@@ -31,6 +16,9 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 # where each variable to be plotted gets its own block.  We then count
 # the number of variables and plot them.
 #
+#
+# The "-i file" option can be used to specify a different inputs file
+#
 # We use the matplotlib Imagegrid to make the plot axes easy to setup.
 #
 # We look at the aspect ratio of the data to ensure that we use the
@@ -38,6 +26,22 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 #
 # Note: we always do a plot of 1280x720 pixels (or some multiple thereof).
 # as this is 720p HD resolution (good for youtube).
+
+
+import matplotlib
+matplotlib.use('Agg')   # this is important for batch mode on machines w/o a display
+import numpy
+import pylab
+import os
+import sys
+import getopt
+import ConfigParser
+import fsnapshot
+
+import math
+import string
+from mpl_toolkits.axes_grid1 import ImageGrid
+
 
 
 #-----------------------------------------------------------------------------
