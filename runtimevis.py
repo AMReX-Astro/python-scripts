@@ -10,6 +10,8 @@
 # [density]
 # min = X
 # max = Y
+# log = [0|1]
+# eps = Z
 #
 # ...
 # 
@@ -26,7 +28,9 @@
 #
 # Note: we always do a plot of 1280x720 pixels (or some multiple thereof).
 # as this is 720p HD resolution (good for youtube).
-
+#
+# here, if eps > 0, we will clip the data to this value at the lower end.
+# This prevents us from taking the log of negative numbers
 
 import matplotlib
 matplotlib.use('Agg')   # this is important for batch mode on machines w/o a display
@@ -47,11 +51,12 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 #-----------------------------------------------------------------------------
 class variable:
 
-    def __init__(self, name="", minval=None, maxval=None, log=0):
+    def __init__(self, name="", minval=None, maxval=None, log=0, eps=-1.0):
         self.name = name
         self.min = minval
         self.max = maxval
         self.log = log
+        self.eps = eps
         self.data = None
 
 
@@ -119,6 +124,13 @@ def parseInfile(inFile):
                     sys.exit("invalid log for %s" % (section))
 
                 vars[len(vars)-1].log = value
+
+            elif option == "eps":
+                try: value=parser.getfloat(section,option)
+                except ValueError:
+                    sys.exit("invalid eps for %s" % (section))
+
+                vars[len(vars)-1].eps = value
 
             else:
                 sys.exit("invalid option for %s" % (section))
@@ -235,7 +247,15 @@ def doPlot(ax, grd, var):
     extent = [grd.xmin, grd.xmax, grd.ymin, grd.ymax]
 
     if var.log:
-        pData = numpy.log10(var.data)
+
+        if (var.eps > 0):
+            # clip the data to prevent logs of negative numbers
+            pData = var.data.copy()
+            pData[pData < var.eps] = var.eps
+            pData = numpy.log10(pData)
+        else:
+            pData = numpy.log10(var.data)            
+
         if (not var.min == None): 
             pmin = math.log10(var.min)
         else:
