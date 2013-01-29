@@ -18,6 +18,8 @@
 # where each variable to be plotted gets its own block.  We then count
 # the number of variables and plot them.
 #
+# general is a special block meant to control overall plotting
+# features.
 #
 # The "-i file" option can be used to specify a different inputs file
 #
@@ -75,6 +77,12 @@ class variable:
         return str
 
 
+class plotAttr:
+    
+    def __init__(self, numXlabels=None):
+        self.numXlabels = numXlabels
+
+
 class grid:
 
     def __init__ (self, xmin=0.0, ymin=0.0, xmax=1.0, ymax=1.0, 
@@ -93,55 +101,82 @@ def parseInfile(inFile):
 
     vars = []
 
+    pAttr = plotAttr()
+
     parser=ConfigParser.SafeConfigParser()
+    parser.optionxform = str  # case sensitive
     parser.read(inFile)
 
     if (parser.sections() == []):
         sys.exit("ERROR: no variables defined")
 
     for section in parser.sections():
-        vars.append(variable(section))
+
+        if section == "general":
+            # general plot attributes
+            for option in parser.options(section):
+                
+                print "in general: ", option
+                if option == "numXlabels":
+                    try: value=parser.getint(section,option)
+                    except ValueError:
+                        sys.exit("invalid numXlabels value")
+
+                    print "setting : ", value
+                    pAttr.numXlabels = value
+                
+            
+        else:
+            # a variable
+            vars.append(variable(section))
         
-        for option in parser.options(section):
+            for option in parser.options(section):
 
-            if option == "min":
-                try: value=parser.getfloat(section,option)
-                except ValueError:
-                    sys.exit("invalid min for %s" % (section))
+                if option == "min":
+                    try: value=parser.getfloat(section,option)
+                    except ValueError:
+                        sys.exit("invalid min for %s" % (section))
+                        
+                    vars[len(vars)-1].min = value
 
-                vars[len(vars)-1].min = value
+                elif option == "max":
+                    try: value=parser.getfloat(section,option)
+                    except ValueError:
+                        sys.exit("invalid max for %s" % (section))
+                        
+                    vars[len(vars)-1].max = value
 
-            elif option == "max":
-                try: value=parser.getfloat(section,option)
-                except ValueError:
-                    sys.exit("invalid max for %s" % (section))
+                elif option == "log":
+                    try: value=parser.getint(section,option)
+                    except ValueError:
+                        sys.exit("invalid log for %s" % (section))
 
-                vars[len(vars)-1].max = value
+                    vars[len(vars)-1].log = value
 
-            elif option == "log":
-                try: value=parser.getint(section,option)
-                except ValueError:
-                    sys.exit("invalid log for %s" % (section))
+                elif option == "eps":
+                    try: value=parser.getfloat(section,option)
+                    except ValueError:
+                        sys.exit("invalid eps for %s" % (section))
 
-                vars[len(vars)-1].log = value
+                    vars[len(vars)-1].eps = value
 
-            elif option == "eps":
-                try: value=parser.getfloat(section,option)
-                except ValueError:
-                    sys.exit("invalid eps for %s" % (section))
-
-                vars[len(vars)-1].eps = value
-
-            else:
-                sys.exit("invalid option for %s" % (section))
+                else:
+                    sys.exit("invalid option for %s" % (section))
 
 
         #print vars[len(vars)-1]   # debugging
-    return vars
+    return pAttr, vars
 
     
 #-----------------------------------------------------------------------------
 def setupAxes(F, aspectRatio, nvar):
+
+    # this is a hack -- the ImageGrid doesn't seem to turn off the 
+    # offset text on those axes that don't show the y-axis.  onLeft
+    # will hold the axis indices of those axes that have the y-axis
+    # on the very left of the figure, and therefore will show the
+    # y-axis labels
+    onLeft = []
 
     if (aspectRatio == "h"):
 
@@ -157,7 +192,10 @@ def setupAxes(F, aspectRatio, nvar):
                                share_all = True,
                                cbar_location="top", cbar_mode="each",
                                cbar_size="5%", cbar_pad="15%")
-            
+
+            # all axes touch the left of the figure
+            onLeft = list(range(nvar))
+
         elif (nvar == 4):
             axGrid = ImageGrid(F, 111, # similar to subplot(111)
                                nrows_ncols = (2, 2), direction="row",
@@ -168,6 +206,8 @@ def setupAxes(F, aspectRatio, nvar):
                                cbar_location="top", cbar_mode="each",
                                cbar_size="5%", cbar_pad="15%")
 
+            onLeft = [0, 2]
+
         else:
             axGrid = ImageGrid(F, 111, # similar to subplot(111)
                                nrows_ncols = (3, 2), direction="row",
@@ -177,6 +217,8 @@ def setupAxes(F, aspectRatio, nvar):
                                share_all = True,
                                cbar_location="top", cbar_mode="each",
                                cbar_size="5%", cbar_pad="20%")
+
+            onLeft = [0, 2, 4]
 
     elif (aspectRatio == "v"):
 
@@ -193,6 +235,8 @@ def setupAxes(F, aspectRatio, nvar):
                                cbar_location="top", cbar_mode="each",
                                cbar_size="3%", cbar_pad="8%")
 
+            onLeft = [0]
+
         else:
 
             axGrid = ImageGrid(F, 111, # similar to subplot(111)
@@ -203,6 +247,8 @@ def setupAxes(F, aspectRatio, nvar):
                                share_all = True,
                                cbar_location="top", cbar_mode="each",
                                cbar_size="5%", cbar_pad="15%")
+
+            onLeft = [0]
 
     else:
         
@@ -217,6 +263,8 @@ def setupAxes(F, aspectRatio, nvar):
                                share_all = True,
                                cbar_location="top", cbar_mode="each",
                                cbar_size="5%", cbar_pad="10%")
+
+            onLeft = [0]
             
         elif (nvar == 4):
             axGrid = ImageGrid(F, 111, # similar to subplot(111)
@@ -227,6 +275,9 @@ def setupAxes(F, aspectRatio, nvar):
                                share_all = True,
                                cbar_location="top", cbar_mode="each",
                                cbar_size="5%", cbar_pad="15%")
+
+            onLeft = [0, 2]
+
         else:
             axGrid = ImageGrid(F, 111, # similar to subplot(111)
                                nrows_ncols = (2, 3), direction="row",
@@ -237,13 +288,13 @@ def setupAxes(F, aspectRatio, nvar):
                                cbar_location="top", cbar_mode="each",
                                cbar_size="5%", cbar_pad="15%")
 
+            onLeft = [0, 3]
 
-
-    return axGrid
+    return axGrid, onLeft
 
 
 #-----------------------------------------------------------------------------
-def doPlot(ax, grd, var):
+def doPlot(ax, grd, pAttr, var, yoffset):
     extent = [grd.xmin, grd.xmax, grd.ymin, grd.ymax]
 
     if var.log:
@@ -283,6 +334,18 @@ def doPlot(ax, grd, var):
     ax.xaxis.set_major_formatter(pylab.ScalarFormatter(useMathText=True))
     ax.yaxis.set_major_formatter(pylab.ScalarFormatter(useMathText=True))
 
+    print pAttr.numXlabels
+    if (not pAttr.numXlabels == None):
+        print "here"
+
+        xtickvals = grd.xmin + numpy.arange(pAttr.numXlabels)*(grd.xmax - grd.xmin)/pAttr.numXlabels
+        print xtickvals
+        ax.set_xticks(xtickvals)
+
+
+    if (not yoffset):
+        ax.yaxis.offsetText.set_visible(False)
+
     ax.cax.colorbar(im, format=formatter)
 
 
@@ -291,7 +354,7 @@ def main(inFile, plotFile):
 
     # get a list of variable objects that contains the information
     # about what to plot
-    vars = parseInfile(inFile)
+    pAttr, vars = parseInfile(inFile)
 
     nvar = len(vars)
 
@@ -352,13 +415,16 @@ def main(inFile, plotFile):
 
 
     # setup the axes
-    axGrid = setupAxes(F, aspectRatio, nvar)
-
+    axGrid, onLeft = setupAxes(F, aspectRatio, nvar)
 
     # plot the data
     n = 0
     while (n < nvar):
-        doPlot(axGrid[n], gridInfo, vars[n])
+        yoffset = 0
+        if n in onLeft:
+            yoffset = 1
+
+        doPlot(axGrid[n], gridInfo, pAttr, vars[n], yoffset)
         n += 1
 
 
