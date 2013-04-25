@@ -350,7 +350,7 @@ def doPlot(ax, grd, pAttr, var, yoffset):
 
 
 #-----------------------------------------------------------------------------
-def main(inFile, plotFile):
+def main(inFile, outFile, double, plotFile):
 
     # get a list of variable objects that contains the information
     # about what to plot
@@ -408,10 +408,22 @@ def main(inFile, plotFile):
 
 
     # setup the figure
-    F = pylab.figure(1, (12.8, 7.2)) 
+    if (double == 1):
+        F = pylab.figure(1, (25.6, 14.4)) 
+    else:
+        F = pylab.figure(1, (12.8, 7.2)) 
     F.clf()
 
-    pylab.rc("font", size=9)
+    if (double == 1):
+        pylab.rcParams.update({'xtick.labelsize': 20,                              
+                               'ytick.labelsize': 20,                              
+                               'text.fontsize': 24})                               
+
+        pylab.rc("axes", linewidth=2.0)                                            
+        pylab.rc("lines", markeredgewidth=2.0)    
+        pylab.rc("font", size=18)
+    else:
+        pylab.rc("font", size=9)
 
 
     # setup the axes
@@ -440,21 +452,25 @@ def main(inFile, plotFile):
     F.text(0.1, 0.01, "t = %g s" % (time), transform = F.transFigure, color="k")
 
     # automatically make things look better
-    try: F.tight_layout(pad=2.0)  # requires matplotlib >= 1.1
+    try: F.tight_layout(pad=2.0,w_pad=5.0)  # requires matplotlib >= 1.1
     except:
         pass
 
 
-    pylab.savefig("%s.png" % (plotFile) )
-
+    if outFile == None:
+        pylab.savefig("%s.png" % (plotFile) )
+    else:
+        pylab.savefig("%s" % (outFile) )
 
 
 if __name__ == "__main__":
 
     # parse the commandline options
     inFile = "vis.in"
+    outFile = None
+    double = 0
 
-    try: opts, next = getopt.getopt(sys.argv[1:], "i:")
+    try: opts, next = getopt.getopt(sys.argv[1:], "i:o:d")
     except getopt.GetoptError:
         sys.exit("ERROR: invalid calling sequence")
 
@@ -462,11 +478,16 @@ if __name__ == "__main__":
         if o == "-i":
             inFile = a
 
+        if o == "-o":
+            outFile = a
+
+        if o == "-d":
+            double = 1
 
     try: plotFile = os.path.normpath(next[0])
     except IndexError:
         sys.exit("ERROR: plotfile not specified")
 
 
-    main(inFile, plotFile)
+    main(inFile, outFile, double, plotFile)
 
