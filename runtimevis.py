@@ -79,8 +79,9 @@ class variable:
 
 class plotAttr:
     
-    def __init__(self, numXlabels=None):
+    def __init__(self, numXlabels=None, title=None):
         self.numXlabels = numXlabels
+        self.title = title
 
 
 class grid:
@@ -116,7 +117,6 @@ def parseInfile(inFile):
             # general plot attributes
             for option in parser.options(section):
                 
-                print "in general: ", option
                 if option == "numXlabels":
                     try: value=parser.getint(section,option)
                     except ValueError:
@@ -124,6 +124,13 @@ def parseInfile(inFile):
 
                     print "setting : ", value
                     pAttr.numXlabels = value
+
+                if option == "title":
+                    try: value=parser.get(section,option)
+                    except ValueError:
+                        sys.exit("invalid title value")
+
+                    pAttr.title = value
                 
             
         else:
@@ -456,11 +463,16 @@ def main(inFile, outFile, double, plotFile):
     except:
         pass
 
+    if not pAttr.title == None:
+        F.text(0.5, 0.95, pAttr.title, transform = F.transFigure, color="k", horizontalalignment="center", fontsize=16)
+
 
     if outFile == None:
         pylab.savefig("%s.png" % (plotFile) )
     else:
         pylab.savefig("%s" % (outFile) )
+
+    pylab.savefig("%s.png" % (plotFile) )
 
 
 if __name__ == "__main__":

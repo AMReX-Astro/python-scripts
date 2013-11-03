@@ -5,7 +5,6 @@
 #
 # 2011-12-02 M. Zingale
 
-import fsnapshot
 import numpy
 import pylab
 import matplotlib
@@ -16,13 +15,22 @@ import math
 import string
 import mpl_toolkits.axes_grid1
 
+# Give an informative error if we can't get fsnapsho
+try:
+    import fsnapshot
+except ImportError as e:
+    print "*** ERROR: %s ***" % e
+    print "\nNote: this script requires the fsnapshot.so library, compiled", \
+           "\nwith f2py using the GNUmakefile in AmrPostprocessing/python."
+    sys.exit()
+
 
 #==============================================================================
 # do_plot
 #==============================================================================
 def do_plot(plotfile, component, component2, outFile, log, 
             minval, maxval, minval2, maxval2, eps, dpi, origin, annotation, 
-            xmax_pass, ymax_pass, zmax_pass):
+            xmin_pass, ymin_pass, zmin_pass, xmax_pass, ymax_pass, zmax_pass):
 
     pylab.rc("font", size=9)
 
@@ -79,18 +87,25 @@ def do_plot(plotfile, component, component2, outFile, log,
         #----------------------------------------------------------------------
         extent = [xmin, xmax, ymin, ymax]
 
+        ix0 = 0
+        ix = nx
+        iy0 = 0
+        iy = ny
+
+        if (not xmin_pass == None):
+            extent[0] = xmin_pass
+            ix0 = int((xmin_pass - xmin)/dx)
+
+        if (not ymin_pass == None):
+            extent[2] = ymin_pass
+            iy0 = int((ymin_pass - ymin)/dy)
+
         if (not xmax_pass == None):
             extent[1] = xmax_pass
+            ix = int((xmax_pass - xmin)/dx)
 
         if (not ymax_pass == None):
             extent[3] = ymax_pass
-
-        ix = nx
-        if (not xmax_pass == None):
-            ix = int((xmax_pass - xmin)/dx)
-
-        iy = ny
-        if (not ymax_pass == None):
             iy = int((ymax_pass - ymin)/dy)
 
 
@@ -151,7 +166,7 @@ def do_plot(plotfile, component, component2, outFile, log,
 
         divider = mpl_toolkits.axes_grid1.make_axes_locatable(ax)    
 
-        im=pylab.imshow(data[0:iy,0:ix],origin='lower', extent=extent, vmin=minval, vmax=maxval)
+        im=pylab.imshow(data[iy0:iy,ix0:ix],origin='lower', extent=extent, vmin=minval, vmax=maxval)
 
         pylab.title(component)
         pylab.xlabel("x")
@@ -211,7 +226,7 @@ def do_plot(plotfile, component, component2, outFile, log,
 
             divider = mpl_toolkits.axes_grid1.make_axes_locatable(ax)
 
-            im = pylab.imshow(data2[0:iy,0:ix], origin='lower', extent=extent, 
+            im = pylab.imshow(data2[iy0:iy,ix0:ix], origin='lower', extent=extent, 
                               vmin=minval2, vmax=maxval2)
 
             pylab.title(component2)
@@ -349,18 +364,25 @@ def do_plot(plotfile, component, component2, outFile, log,
         # x-y
         extent = [xmin, xmax, ymin, ymax]
 
+        ix0 = 0
+        ix = nx
+        iy0 = 0
+        iy = ny
+
+        if (not xmin_pass == None):
+            extent[0] = xmin_pass
+            ix0 = int((xmin_pass - xmin)/dx)
+
+        if (not ymin_pass == None):
+            extent[2] = ymin_pass
+            iy0 = int((ymin_pass - ymin)/dy)
+
         if (not xmax_pass == None):
             extent[1] = xmax_pass
+            ix = int((xmax_pass - xmin)/dx)
 
         if (not ymax_pass == None):
             extent[3] = ymax_pass
-
-        ix = nx
-        if (not xmax_pass == None):
-            ix = int((xmax_pass - xmin)/dx)
-
-        iy = ny
-        if (not ymax_pass == None):
             iy = int((ymax_pass - ymin)/dy)
 
 
@@ -369,7 +391,7 @@ def do_plot(plotfile, component, component2, outFile, log,
         pylab.subplots_adjust(wspace=0.4)
         #fig.add_axes(pos1)
 
-        im=pylab.imshow(data_xy[0:iy,0:ix],origin='lower', extent=extent, 
+        im=pylab.imshow(data_xy[iy0:iy,ix0:ix],origin='lower', extent=extent, 
                         vmin=minval, vmax=maxval, axes=pos1)
 
         pylab.xlabel("x")
@@ -393,26 +415,33 @@ def do_plot(plotfile, component, component2, outFile, log,
         trans=matplotlib.transforms.offset_copy(ax.transData, x=0, y=-0.5, 
                                                 fig=fig1, units='inches')
 
-        pylab.text(xmin, ymin, "time = %7.3g s" % (time), 
-                   verticalalignment="bottom", transform = trans, 
-                   clip_on=False, fontsize=10)
+        # pylab.text(xmin_pass, ymin_pass, "time = %7.3g s" % (time), 
+        #            verticalalignment="bottom", transform = trans, 
+        #            clip_on=False, fontsize=10)
 
 
         # x-z
         extent = [xmin, xmax, zmin, zmax]
 
+        ix0 = 0
+        ix = nx
+        iz0 = 0
+        iz = nz
+
+        if (not xmin_pass == None):
+            extent[0] = xmin_pass
+            ix0 = int((xmin_pass - xmin)/dx)
+
+        if (not zmin_pass == None):
+            extent[2] = zmin_pass
+            iz0 = int((zmin_pass - zmin)/dz)
+
         if (not xmax_pass == None):
             extent[1] = xmax_pass
+            ix = int((xmax_pass - xmin)/dx)
 
         if (not zmax_pass == None):
             extent[3] = zmax_pass
-
-        ix = nx
-        if (not xmax_pass == None):
-            ix = int((xmax_pass - xmin)/dx)
-
-        iz = nz
-        if (not zmax_pass == None):
             iz = int((zmax_pass - zmin)/dz)
 
 
@@ -420,7 +449,7 @@ def do_plot(plotfile, component, component2, outFile, log,
         ax = pylab.subplot(1,3,2)
         #fig.add_axes(pos2)
 
-        im=pylab.imshow(data_xz[0:iz,0:ix],origin='lower', extent=extent, 
+        im=pylab.imshow(data_xz[iz0:iz,ix0:ix],origin='lower', extent=extent, 
                         vmin=minval, vmax=maxval, axes=pos2)
 
         pylab.xlabel("x")
@@ -443,18 +472,25 @@ def do_plot(plotfile, component, component2, outFile, log,
         # y-z
         extent = [ymin, ymax, zmin, zmax]
 
+        iy0 = 0
+        iy = ny
+        iz0 = 0
+        iz = nz
+
+        if (not ymin_pass == None):
+            extent[0] = ymin_pass
+            iy0 = int((ymin_pass - ymin)/dy)
+
+        if (not zmin_pass == None):
+            extent[2] = zmin_pass
+            iz0 = int((zmin_pass - zmin)/dz)
+
         if (not ymax_pass == None):
             extent[1] = ymax_pass
+            iy = int((ymax_pass - ymin)/dy)
 
         if (not zmax_pass == None):
             extent[3] = zmax_pass
-
-        iy = ny
-        if (not ymax_pass == None):
-            iy = int((ymax_pass - ymin)/dy)
-
-        iz = nz
-        if (not zmax_pass == None):
             iz = int((zmax_pass - zmin)/dz)
 
 
@@ -462,7 +498,7 @@ def do_plot(plotfile, component, component2, outFile, log,
         ax = pylab.subplot(1,3,3)
         #fig.add_axes(pos3)
 
-        im=pylab.imshow(data_yz[0:iz,0:iy],origin='lower', extent=extent, 
+        im=pylab.imshow(data_yz[iz0:iz,iy0:iy],origin='lower', extent=extent, 
                         vmin=minval, vmax=maxval, axes=pos3)
 
         pylab.xlabel("y")
@@ -496,14 +532,14 @@ def do_plot(plotfile, component, component2, outFile, log,
     #--------------------------------------------------------------------------
     # save the figure
     #--------------------------------------------------------------------------
-    try: pylab.tight_layout()  # requires matplotlib >= 1.1
-    except:
-        pass
+    # try: pylab.tight_layout()  # requires matplotlib >= 1.1
+    # except:
+    #     pass
 
     if (not eps):
         pylab.savefig(outFile, bbox_inches='tight', dpi=dpi, pad_inches=0.33)
     else:
-        pylab.savefig(outFile, bbox_inches='tight', pad_inches=0.33)
+        pylab.savefig(outFile)#, bbox_inches='tight', pad_inches=0.33)
 
 
 
@@ -545,7 +581,7 @@ def usage():
 
 
     Note: this script requires the fsnapshot.so library, compiled with
-    f2py using the GNUmakefile in data_processing/python_plotfile/
+    f2py using the GNUmakefile in AmrPostprocessing/python.
 
     """              
     print usageStr
@@ -567,11 +603,14 @@ if __name__== "__main__":
     dpi = 100
     origin = 0
     annotation = ""
+    xmin = None
+    ymin = None
+    zmin = None
     xmax = None
     ymax = None
     zmax = None
 
-    try: opts, next = getopt.getopt(sys.argv[1:], "o:m:M:n:N:X:Y:Z:", 
+    try: opts, next = getopt.getopt(sys.argv[1:], "o:m:M:n:N:x:y:z:X:Y:Z:", 
                                     ["log","eps","dpi=","origin","annotate="])
     except getopt.GetoptError:
         print "invalid calling sequence"
@@ -607,6 +646,24 @@ if __name__== "__main__":
             except ValueError:
                 print "invalid value for -N"
                 sys.exit(2)
+
+        if o == "-x":
+            try: xmin = float(a)
+            except ValueError:
+                print "invalid value for -x"
+                sys.exit(2)            
+
+        if o == "-y":
+            try: ymin = float(a)
+            except ValueError:
+                print "invalid value for -y"
+                sys.exit(2)            
+
+        if o == "-z":
+            try: zmin = float(a)
+            except ValueError:
+                print "invalid value for -z"
+                sys.exit(2)            
 
         if o == "-X":
             try: xmax = float(a)
@@ -664,4 +721,4 @@ if __name__== "__main__":
 
     do_plot(plotfile, component, component2, outFile, 
             log, minvar, maxvar, minvar2, maxvar2, eps, dpi, origin, annotation,
-            xmax, ymax, zmax)
+            xmin, ymin, zmin, xmax, ymax, zmax)
