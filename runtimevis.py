@@ -12,6 +12,7 @@
 # max = Y
 # log = [0|1]
 # eps = Z
+# cmap = name
 #
 # ...
 # 
@@ -53,14 +54,14 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 #-----------------------------------------------------------------------------
 class variable:
 
-    def __init__(self, name="", minval=None, maxval=None, log=0, eps=-1.0):
+    def __init__(self, name="", minval=None, maxval=None, log=0, eps=-1.0, cmap=None):
         self.name = name
         self.min = minval
         self.max = maxval
         self.log = log
         self.eps = eps
         self.data = None
-
+        self.cmap = cmap
 
     def __str__(self):
         if self.min == None:
@@ -166,6 +167,14 @@ def parseInfile(inFile):
                         sys.exit("invalid eps for %s" % (section))
 
                     vars[len(vars)-1].eps = value
+
+
+                elif option == "cmap":
+                    try: value=parser.get(section,option)
+                    except ValueError:
+                        sys.exit("invalid cmap for %s" % (section))
+
+                    vars[len(vars)-1].cmap = value
 
                 else:
                     sys.exit("invalid option for %s" % (section))
@@ -304,6 +313,8 @@ def setupAxes(F, aspectRatio, nvar):
 def doPlot(ax, grd, pAttr, var, yoffset):
     extent = [grd.xmin, grd.xmax, grd.ymin, grd.ymax]
 
+    defaultCmap = pylab.get_cmap("jet")
+
     if var.log:
 
         if (var.eps > 0):
@@ -330,8 +341,13 @@ def doPlot(ax, grd, pAttr, var, yoffset):
     formatter = matplotlib.ticker.ScalarFormatter(useMathText=True)
     formatter.set_powerlimits((-3,3))
 
+    if var.cmap == None:
+        cmap = defaultCmap
+    else:
+        cmap = var.cmap
+
     im = ax.imshow(pData, origin="lower", interpolation="nearest",
-                   vmin=pmin, vmax=pmax, extent=extent)
+                   vmin=pmin, vmax=pmax, extent=extent, cmap=pylab.get_cmap(cmap))
 
     ax.set_title(var.name)
 
