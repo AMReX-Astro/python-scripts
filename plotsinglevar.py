@@ -5,7 +5,6 @@
 #
 # 2011-12-02 M. Zingale
 
-import fsnapshot
 import numpy
 import pylab
 import matplotlib
@@ -15,6 +14,15 @@ import getopt
 import math
 import string
 import mpl_toolkits.axes_grid1
+
+# Give an informative error if we can't get fsnapsho
+try:
+    import fsnapshot
+except ImportError as e:
+    print "*** ERROR: %s ***" % e
+    print "\nNote: this script requires the fsnapshot.so library, compiled", \
+           "\nwith f2py using the GNUmakefile in AmrPostprocessing/python."
+    sys.exit()
 
 
 #==============================================================================
@@ -407,9 +415,9 @@ def do_plot(plotfile, component, component2, outFile, log,
         trans=matplotlib.transforms.offset_copy(ax.transData, x=0, y=-0.5, 
                                                 fig=fig1, units='inches')
 
-        pylab.text(xmin_pass, ymin_pass, "time = %7.3g s" % (time), 
-                   verticalalignment="bottom", transform = trans, 
-                   clip_on=False, fontsize=10)
+        # pylab.text(xmin_pass, ymin_pass, "time = %7.3g s" % (time), 
+        #            verticalalignment="bottom", transform = trans, 
+        #            clip_on=False, fontsize=10)
 
 
         # x-z
@@ -524,14 +532,14 @@ def do_plot(plotfile, component, component2, outFile, log,
     #--------------------------------------------------------------------------
     # save the figure
     #--------------------------------------------------------------------------
-    try: pylab.tight_layout()  # requires matplotlib >= 1.1
-    except:
-        pass
+    # try: pylab.tight_layout()  # requires matplotlib >= 1.1
+    # except:
+    #     pass
 
     if (not eps):
         pylab.savefig(outFile, bbox_inches='tight', dpi=dpi, pad_inches=0.33)
     else:
-        pylab.savefig(outFile, bbox_inches='tight', pad_inches=0.33)
+        pylab.savefig(outFile)#, bbox_inches='tight', pad_inches=0.33)
 
 
 
@@ -573,7 +581,7 @@ def usage():
 
 
     Note: this script requires the fsnapshot.so library, compiled with
-    f2py using the GNUmakefile in data_processing/python_plotfile/
+    f2py using the GNUmakefile in AmrPostprocessing/python.
 
     """              
     print usageStr

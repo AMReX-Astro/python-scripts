@@ -12,6 +12,7 @@
 # max = Y
 # log = [0|1]
 # eps = Z
+# cmap = name
 #
 # ...
 # 
@@ -53,14 +54,14 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 #-----------------------------------------------------------------------------
 class variable:
 
-    def __init__(self, name="", minval=None, maxval=None, log=0, eps=-1.0):
+    def __init__(self, name="", minval=None, maxval=None, log=0, eps=-1.0, cmap=None):
         self.name = name
         self.min = minval
         self.max = maxval
         self.log = log
         self.eps = eps
         self.data = None
-
+        self.cmap = cmap
 
     def __str__(self):
         if self.min == None:
@@ -79,8 +80,9 @@ class variable:
 
 class plotAttr:
     
-    def __init__(self, numXlabels=None):
+    def __init__(self, numXlabels=None, title=None):
         self.numXlabels = numXlabels
+        self.title = title
 
 
 class grid:
@@ -116,7 +118,6 @@ def parseInfile(inFile):
             # general plot attributes
             for option in parser.options(section):
                 
-                print "in general: ", option
                 if option == "numXlabels":
                     try: value=parser.getint(section,option)
                     except ValueError:
@@ -124,6 +125,13 @@ def parseInfile(inFile):
 
                     print "setting : ", value
                     pAttr.numXlabels = value
+
+                if option == "title":
+                    try: value=parser.get(section,option)
+                    except ValueError:
+                        sys.exit("invalid title value")
+
+                    pAttr.title = value
                 
             
         else:
@@ -159,6 +167,14 @@ def parseInfile(inFile):
                         sys.exit("invalid eps for %s" % (section))
 
                     vars[len(vars)-1].eps = value
+
+
+                elif option == "cmap":
+                    try: value=parser.get(section,option)
+                    except ValueError:
+                        sys.exit("invalid cmap for %s" % (section))
+
+                    vars[len(vars)-1].cmap = value
 
                 else:
                     sys.exit("invalid option for %s" % (section))
@@ -297,6 +313,8 @@ def setupAxes(F, aspectRatio, nvar):
 def doPlot(ax, grd, pAttr, var, yoffset):
     extent = [grd.xmin, grd.xmax, grd.ymin, grd.ymax]
 
+    defaultCmap = pylab.get_cmap("jet")
+
     if var.log:
 
         if (var.eps > 0):
@@ -323,8 +341,13 @@ def doPlot(ax, grd, pAttr, var, yoffset):
     formatter = matplotlib.ticker.ScalarFormatter(useMathText=True)
     formatter.set_powerlimits((-3,3))
 
+    if var.cmap == None:
+        cmap = defaultCmap
+    else:
+        cmap = var.cmap
+
     im = ax.imshow(pData, origin="lower", interpolation="nearest",
-                   vmin=pmin, vmax=pmax, extent=extent)
+                   vmin=pmin, vmax=pmax, extent=extent, cmap=pylab.get_cmap(cmap))
 
     ax.set_title(var.name)
 
@@ -350,7 +373,7 @@ def doPlot(ax, grd, pAttr, var, yoffset):
 
 
 #-----------------------------------------------------------------------------
-def main(inFile, plotFile):
+def main(inFile, outFile, double, plotFile):
 
     # get a list of variable objects that contains the information
     # about what to plot
@@ -408,10 +431,22 @@ def main(inFile, plotFile):
 
 
     # setup the figure
-    F = pylab.figure(1, (12.8, 7.2)) 
+    if (double == 1):
+        F = pylab.figure(1, (25.6, 14.4)) 
+    else:
+        F = pylab.figure(1, (12.8, 7.2)) 
     F.clf()
 
-    pylab.rc("font", size=9)
+    if (double == 1):
+        pylab.rcParams.update({'xtick.labelsize': 20,                              
+                               'ytick.labelsize': 20,                              
+                               'text.fontsize': 24})                               
+
+        pylab.rc("axes", linewidth=2.0)                                            
+        pylab.rc("lines", markeredgewidth=2.0)    
+        pylab.rc("font", size=18)
+    else:
+        pylab.rc("font", size=9)
 
 
     # setup the axes
@@ -440,21 +475,30 @@ def main(inFile, plotFile):
     F.text(0.1, 0.01, "t = %g s" % (time), transform = F.transFigure, color="k")
 
     # automatically make things look better
-    try: F.tight_layout(pad=3.0)  # requires matplotlib >= 1.1
+    try: F.tight_layout(pad=2.0,w_pad=5.0)  # requires matplotlib >= 1.1
     except:
         pass
 
+    if not pAttr.title == None:
+        F.text(0.5, 0.95, pAttr.title, transform = F.transFigure, color="k", horizontalalignment="center", fontsize=16)
+
+
+    if outFile == None:
+        pylab.savefig("%s.png" % (plotFile) )
+    else:
+        pylab.savefig("%s" % (outFile) )
 
     pylab.savefig("%s.png" % (plotFile) )
-
 
 
 if __name__ == "__main__":
 
     # parse the commandline options
     inFile = "vis.in"
+    outFile = None
+    double = 0
 
-    try: opts, next = getopt.getopt(sys.argv[1:], "i:")
+    try: opts, next = getopt.getopt(sys.argv[1:], "i:o:d")
     except getopt.GetoptError:
         sys.exit("ERROR: invalid calling sequence")
 
@@ -462,11 +506,16 @@ if __name__ == "__main__":
         if o == "-i":
             inFile = a
 
+        if o == "-o":
+            outFile = a
+
+        if o == "-d":
+            double = 1
 
     try: plotFile = os.path.normpath(next[0])
     except IndexError:
         sys.exit("ERROR: plotfile not specified")
 
 
-    main(inFile, plotFile)
+    main(inFile, outFile, double, plotFile)
 
