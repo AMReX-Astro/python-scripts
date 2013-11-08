@@ -241,10 +241,9 @@ def setupAxes(F, aspectRatio, nvar):
         # always do 1 row -- just much with the spacings here
 
         if (nvar <= 4):
-
             axGrid = ImageGrid(F, 111, # similar to subplot(111)
                                nrows_ncols = (1, nvar), direction="row",
-                               axes_pad = 0.2 ,
+                               axes_pad = 0.5 ,
                                add_all=True,
                                label_mode = "L",
                                share_all = True,
@@ -254,7 +253,6 @@ def setupAxes(F, aspectRatio, nvar):
             onLeft = [0]
 
         else:
-
             axGrid = ImageGrid(F, 111, # similar to subplot(111)
                                nrows_ncols = (1, nvar), direction="row",
                                axes_pad = 0.2 ,
@@ -273,7 +271,7 @@ def setupAxes(F, aspectRatio, nvar):
         if (nvar <= 3):
             axGrid = ImageGrid(F, 111, # similar to subplot(111)
                                nrows_ncols = (1, nvar), direction="row",
-                               axes_pad = 0.2 ,
+                               axes_pad = 0.5 ,
                                add_all=True,
                                label_mode = "L",
                                share_all = True,
@@ -373,7 +371,7 @@ def doPlot(ax, grd, pAttr, var, yoffset):
 
 
 #-----------------------------------------------------------------------------
-def main(inFile, outFile, double, plotFile):
+def main(inFile, outFile, double, plotFile, eps_out):
 
     # get a list of variable objects that contains the information
     # about what to plot
@@ -484,11 +482,17 @@ def main(inFile, outFile, double, plotFile):
 
 
     if outFile == None:
-        pylab.savefig("%s.png" % (plotFile) )
-    else:
-        pylab.savefig("%s" % (outFile) )
+        if eps_out == 1:
+            pylab.savefig("%s.eps" % (plotFile) )
+        else:
+            pylab.savefig("%s.png" % (plotFile) )
 
-    pylab.savefig("%s.png" % (plotFile) )
+    else:
+        if eps_out == 1:
+            pylab.savefig("%s" % (outFile) )
+        else:
+            pylab.savefig("%s" % (outFile) )
+
 
 
 if __name__ == "__main__":
@@ -497,8 +501,9 @@ if __name__ == "__main__":
     inFile = "vis.in"
     outFile = None
     double = 0
+    eps_out = 0
 
-    try: opts, next = getopt.getopt(sys.argv[1:], "i:o:d")
+    try: opts, next = getopt.getopt(sys.argv[1:], "i:o:d", ["eps"])
     except getopt.GetoptError:
         sys.exit("ERROR: invalid calling sequence")
 
@@ -512,10 +517,13 @@ if __name__ == "__main__":
         if o == "-d":
             double = 1
 
+        if o == "--eps":
+            eps_out = 1
+    
     try: plotFile = os.path.normpath(next[0])
     except IndexError:
         sys.exit("ERROR: plotfile not specified")
 
 
-    main(inFile, outFile, double, plotFile)
+    main(inFile, outFile, double, plotFile, eps_out)
 
