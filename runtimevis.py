@@ -440,7 +440,7 @@ def main(inFile, plotFile):
     F.text(0.1, 0.01, "t = %g s" % (time), transform = F.transFigure, color="k")
 
     # automatically make things look better
-    try: F.tight_layout(pad=2.0)  # requires matplotlib >= 1.1
+    try: F.tight_layout(pad=3.0)  # requires matplotlib >= 1.1
     except:
         pass
 
