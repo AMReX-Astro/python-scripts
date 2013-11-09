@@ -206,7 +206,7 @@ def setupAxes(F, aspectRatio, nvar):
                                add_all=True,
                                label_mode = "L",
                                share_all = True,
-                               cbar_location="top", cbar_mode="each",
+                               cbar_location="bottom", cbar_mode="each",
                                cbar_size="5%", cbar_pad="15%")
 
             # all axes touch the left of the figure
@@ -219,7 +219,7 @@ def setupAxes(F, aspectRatio, nvar):
                                add_all=True,
                                label_mode = "L",
                                share_all = True,
-                               cbar_location="top", cbar_mode="each",
+                               cbar_location="bottom", cbar_mode="each",
                                cbar_size="5%", cbar_pad="15%")
 
             onLeft = [0, 2]
@@ -231,7 +231,7 @@ def setupAxes(F, aspectRatio, nvar):
                                add_all=True,
                                label_mode = "L",
                                share_all = True,
-                               cbar_location="top", cbar_mode="each",
+                               cbar_location="bottom", cbar_mode="each",
                                cbar_size="5%", cbar_pad="20%")
 
             onLeft = [0, 2, 4]
@@ -247,7 +247,7 @@ def setupAxes(F, aspectRatio, nvar):
                                add_all=True,
                                label_mode = "L",
                                share_all = True,
-                               cbar_location="top", cbar_mode="each",
+                               cbar_location="bottom", cbar_mode="each",
                                cbar_size="3%", cbar_pad="8%")
 
             onLeft = [0]
@@ -259,7 +259,7 @@ def setupAxes(F, aspectRatio, nvar):
                                add_all=True,
                                label_mode = "L",
                                share_all = True,
-                               cbar_location="top", cbar_mode="each",
+                               cbar_location="bottom", cbar_mode="each",
                                cbar_size="5%", cbar_pad="15%")
 
             onLeft = [0]
@@ -275,7 +275,7 @@ def setupAxes(F, aspectRatio, nvar):
                                add_all=True,
                                label_mode = "L",
                                share_all = True,
-                               cbar_location="top", cbar_mode="each",
+                               cbar_location="bottom", cbar_mode="each",
                                cbar_size="5%", cbar_pad="10%")
 
             onLeft = [0]
@@ -287,7 +287,7 @@ def setupAxes(F, aspectRatio, nvar):
                                add_all=True,
                                label_mode = "L",
                                share_all = True,
-                               cbar_location="top", cbar_mode="each",
+                               cbar_location="bottom", cbar_mode="each",
                                cbar_size="5%", cbar_pad="15%")
 
             onLeft = [0, 2]
@@ -299,7 +299,7 @@ def setupAxes(F, aspectRatio, nvar):
                                add_all=True,
                                label_mode = "L",
                                share_all = True,
-                               cbar_location="top", cbar_mode="each",
+                               cbar_location="bottom", cbar_mode="each",
                                cbar_size="5%", cbar_pad="15%")
 
             onLeft = [0, 3]
