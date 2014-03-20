@@ -26,6 +26,7 @@ def do_plot(plotfile, component1, component2, outFile,
             xmin, xmax, ymin, ymax,
             label1, label2):
 
+    print             minval1, maxval1, minval2, maxval2
 
     #--------------------------------------------------------------------------
     # construct the output file name
@@ -114,9 +115,11 @@ def do_plot(plotfile, component1, component2, outFile,
         maxval2 = numpy.max(data2)
 
 
-    levels1 = numpy.arange(ncontours)*(maxval1-minval1)/(ncontours-1)
-    levels2 = numpy.arange(ncontours)*(maxval2-minval2)/(ncontours-1)
+    levels1 = numpy.linspace(minval1, maxval1, ncontours, endpoint=True)
+    levels2 = numpy.linspace(minval2, maxval2, ncontours, endpoint=True)
 
+
+    print levels1
 
     #--------------------------------------------------------------------------
     # make the figure
@@ -241,8 +244,9 @@ if __name__== "__main__":
     label2 = None
 
 
-    try: opts, next = getopt.getopt(sys.argv[1:], "o:m1:M1:m2:M2:n:x:X:y:Y:", 
+    try: opts, next = getopt.getopt(sys.argv[1:], "o:m:n:x:X:y:Y:", 
                                     ["eps","dpi=",
+                                     "m1=", "M1=", "m2=", "M2=",
                                      "label1=","label2="])
     except getopt.GetoptError:
         print "invalid calling sequence"
@@ -255,25 +259,25 @@ if __name__== "__main__":
         if o == "-o":
             outFile = a
 
-        if o == "-m1":
+        if o == "--m1":
             try: minvar1 = float(a)
             except ValueError:
                 print "invalid value for -m1"
                 sys.exit(2)
 
-        if o == "-M1":
+        if o == "--M1":
             try: maxvar1 = float(a)
             except ValueError:
                 print "invalid value for -M1"
                 sys.exit(2)
 
-        if o == "-m2":
+        if o == "--m2":
             try: minvar2 = float(a)
             except ValueError:
                 print "invalid value for -m2"
                 sys.exit(2)
 
-        if o == "-M2":
+        if o == "--M2":
             try: maxvar2 = float(a)
             except ValueError:
                 print "invalid value for -M2"
