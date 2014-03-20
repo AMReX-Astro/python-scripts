@@ -185,11 +185,11 @@ def usage():
 
        -o outfile    save the plot to the file outfile
 
-       -m1 value      set the minimum data range for component 1
-       -M1 value      set the maximum data range for component 1
+       --m1 value    set the minimum data range for component 1
+       --M1 value    set the maximum data range for component 1
 
-       -m2 value      set the minimum data range for component 2
-       -M2 value      set the maximum data range for component 2
+       --m2 value    set the minimum data range for component 2
+       --M2 value    set the maximum data range for component 2
 
        -n value      set the number of contours to use
 
