@@ -199,7 +199,7 @@ def do_plot(plotfile1, plotfile2, plotfile3, component, outFile,
             maxval = max(maxval, numpy.max(data3))
 
 
-    levels = numpy.arange(ncontours)*(maxval-minval)/(ncontours-1)
+    levels = numpy.linspace(minval, maxval, ncontours, endpoint=True)
 
 
     #--------------------------------------------------------------------------
