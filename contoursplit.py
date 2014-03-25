@@ -138,7 +138,7 @@ def do_plot(plotfile1, plotfile2, component, outFile,
 
     xx = numpy.array(x[nx2/2:])
     yy = numpy.array(y)
-    dd = numpy.array(data1[:,nx2/2:])
+    dd = numpy.array(data2[:,nx2/2:])
 
     cs2 = pylab.contour(xx, yy, dd,
                         ncontours, colors='r', levels=levels)
