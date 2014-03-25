@@ -22,6 +22,7 @@ import matplotlib.lines
 #==============================================================================
 def do_plot(plotfile1, plotfile2, component, outFile, 
             minval, maxval, 
+            color1, color2,
             ncontours, eps, dpi, 
             xmin, xmax, ymin, ymax,
             label1, label2):
@@ -134,14 +135,14 @@ def do_plot(plotfile1, plotfile2, component, outFile,
     dd = numpy.array(data1[:,0:nx1/2+1])
 
     cs1 = pylab.contour(xx, yy, dd, 
-                        ncontours, colors='b', levels=levels)
+                        ncontours, colors=color1, levels=levels)
 
     xx = numpy.array(x[nx2/2:])
     yy = numpy.array(y)
     dd = numpy.array(data2[:,nx2/2:])
 
     cs2 = pylab.contour(xx, yy, dd,
-                        ncontours, colors='r', levels=levels)
+                        ncontours, colors=color2, levels=levels)
 
 
     # make the labels -- see http://www.scipy.org/Cookbook/Matplotlib/Legend
@@ -150,12 +151,12 @@ def do_plot(plotfile1, plotfile2, component, outFile,
     labels = []
 
     if (not label1 == None):
-        line1 = matplotlib.lines.Line2D(range(10), range(10), linestyle='-', color='b')
+        line1 = matplotlib.lines.Line2D(range(10), range(10), linestyle='-', color=color1)
         lines.append(line1)
         labels.append(label1)
 
     if (not label2 == None):
-        line2 = matplotlib.lines.Line2D(range(10), range(10), linestyle='-', color='r')
+        line2 = matplotlib.lines.Line2D(range(10), range(10), linestyle='-', color=color2)
         lines.append(line2)
         labels.append(label2)
 
@@ -201,11 +202,11 @@ def usage():
 
        -o outfile    save the plot to the file outfile
 
-       --m1 value    set the minimum data range for component 1
-       --M1 value    set the maximum data range for component 1
-
-       --m2 value    set the minimum data range for component 2
-       --M2 value    set the maximum data range for component 2
+       -m value      set the minimum data range 
+       -M value      set the maximum data range 
+    
+       -c value      color for left plot
+       -C value      color for right plot
 
        -n value      set the number of contours to use
 
@@ -256,8 +257,10 @@ if __name__== "__main__":
     label1 = None
     label2 = None
 
+    color1 = "b"
+    color2 = "r"
 
-    try: opts, next = getopt.getopt(sys.argv[1:], "o:m:M:n:x:X:y:Y:", 
+    try: opts, next = getopt.getopt(sys.argv[1:], "o:m:M:n:x:X:y:Y:c:C:", 
                                     ["eps","dpi=",
                                      "label1=","label2="])
     except getopt.GetoptError:
@@ -281,6 +284,18 @@ if __name__== "__main__":
             try: maxvar = float(a)
             except ValueError:
                 print "invalid value for -M"
+                sys.exit(2)
+
+        if o == "-c":
+            try: color1 = a
+            except ValueError:
+                print "invalid value for -c"
+                sys.exit(2)
+
+        if o == "-C":
+            try: color2 = a
+            except ValueError:
+                print "invalid value for -C"
                 sys.exit(2)
 
         if o == "-n":
@@ -351,6 +366,7 @@ if __name__== "__main__":
 
     do_plot(plotfile1, plotfile2, component, outFile, 
             minvar, maxvar, 
+            color1, color2,
             ncontours, eps, dpi, 
             xmin, xmax, ymin, ymax,
             label1, label2)
