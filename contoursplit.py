@@ -97,7 +97,6 @@ def do_plot(plotfile1, plotfile2, plotfile3, component, outFile,
     x = xmin1 + numpy.arange( (nx1), dtype=numpy.float64 )*(xmax1 - xmin1)/nx1
     y = ymin1 + numpy.arange( (ny1), dtype=numpy.float64 )*(ymax1 - ymin1)/ny1
 
-
     # read in the components
     data1 = numpy.zeros( (nx1, ny1), dtype=numpy.float64)
     (data1, err1) = fsnapshot.fplotfile_get_data_2d(plotfile1, component, data1)
@@ -114,7 +113,7 @@ def do_plot(plotfile1, plotfile2, plotfile3, component, outFile,
 
     if not plotfile3 == None:
         data3 = numpy.zeros( (nx3, ny3), dtype=numpy.float64)
-        (data3, err3) = fsnapshot.fplotfile_get_data_2d(plotfile3, component, data2)
+        (data3, err3) = fsnapshot.fplotfile_get_data_2d(plotfile3, component, data3)
 
         if not err3 == 0:
             sys.exit("ERRORS while reading data")
