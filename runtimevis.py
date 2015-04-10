@@ -15,7 +15,7 @@
 # cmap = name
 #
 # ...
-# 
+#
 # where each variable to be plotted gets its own block.  We then count
 # the number of variables and plot them.
 #
@@ -62,6 +62,7 @@ class variable:
         self.eps = eps
         self.data = None
         self.cmap = cmap
+        self.display_name = None
 
     def __str__(self):
         if self.min == None:
@@ -79,15 +80,16 @@ class variable:
 
 
 class plotAttr:
-    
+
     def __init__(self, numXlabels=None, title=None):
         self.numXlabels = numXlabels
         self.title = title
-
+        self.font_size = 9
+        
 
 class grid:
 
-    def __init__ (self, xmin=0.0, ymin=0.0, xmax=1.0, ymax=1.0, 
+    def __init__ (self, xmin=0.0, ymin=0.0, xmax=1.0, ymax=1.0,
                   dx=0.1, dy=0.1):
         self.xmin = xmin
         self.xmax = xmax
@@ -117,7 +119,7 @@ def parseInfile(inFile):
         if section == "general":
             # general plot attributes
             for option in parser.options(section):
-                
+
                 if option == "numXlabels":
                     try: value=parser.getint(section,option)
                     except ValueError:
@@ -132,26 +134,33 @@ def parseInfile(inFile):
                         sys.exit("invalid title value")
 
                     pAttr.title = value
-                
-            
+
+                if option == "font_size":
+                    try: value=parser.get(section,option)
+                    except ValueError:
+                        sys.exit("invalid title value")
+
+                    pAttr.font_size = int(value)
+                    
+
         else:
             # a variable
             vars.append(variable(section))
-        
+
             for option in parser.options(section):
 
                 if option == "min":
                     try: value=parser.getfloat(section,option)
                     except ValueError:
                         sys.exit("invalid min for %s" % (section))
-                        
+
                     vars[len(vars)-1].min = value
 
                 elif option == "max":
                     try: value=parser.getfloat(section,option)
                     except ValueError:
                         sys.exit("invalid max for %s" % (section))
-                        
+
                     vars[len(vars)-1].max = value
 
                 elif option == "log":
@@ -168,13 +177,19 @@ def parseInfile(inFile):
 
                     vars[len(vars)-1].eps = value
 
-
                 elif option == "cmap":
                     try: value=parser.get(section,option)
                     except ValueError:
                         sys.exit("invalid cmap for %s" % (section))
 
                     vars[len(vars)-1].cmap = value
+
+                elif option == "display_name":
+                    try: value=parser.get(section,option)
+                    except ValueError:
+                        sys.exit("invalid cmap for %s" % (section))
+
+                    vars[len(vars)-1].display_name = value
 
                 else:
                     sys.exit("invalid option for %s" % (section))
@@ -183,11 +198,11 @@ def parseInfile(inFile):
         #print vars[len(vars)-1]   # debugging
     return pAttr, vars
 
-    
+
 #-----------------------------------------------------------------------------
 def setupAxes(F, aspectRatio, nvar):
 
-    # this is a hack -- the ImageGrid doesn't seem to turn off the 
+    # this is a hack -- the ImageGrid doesn't seem to turn off the
     # offset text on those axes that don't show the y-axis.  onLeft
     # will hold the axis indices of those axes that have the y-axis
     # on the very left of the figure, and therefore will show the
@@ -265,9 +280,9 @@ def setupAxes(F, aspectRatio, nvar):
             onLeft = [0]
 
     else:
-        
+
         # for <= 3 variables, do a single row
-        # for 4 <= # var <= 6, do 2 rows. 
+        # for 4 <= # var <= 6, do 2 rows.
         if (nvar <= 3):
             axGrid = ImageGrid(F, 111, # similar to subplot(111)
                                nrows_ncols = (1, nvar), direction="row",
@@ -279,7 +294,7 @@ def setupAxes(F, aspectRatio, nvar):
                                cbar_size="5%", cbar_pad="10%")
 
             onLeft = [0]
-            
+
         elif (nvar == 4):
             axGrid = ImageGrid(F, 111, # similar to subplot(111)
                                nrows_ncols = (2, 2), direction="row",
@@ -321,9 +336,9 @@ def doPlot(ax, grd, pAttr, var, yoffset):
             pData[pData < var.eps] = var.eps
             pData = numpy.log10(pData)
         else:
-            pData = numpy.log10(var.data)            
+            pData = numpy.log10(var.data)
 
-        if (not var.min == None): 
+        if (not var.min == None):
             pmin = math.log10(var.min)
         else:
             pmin = None
@@ -347,7 +362,10 @@ def doPlot(ax, grd, pAttr, var, yoffset):
     im = ax.imshow(pData, origin="lower", interpolation="nearest",
                    vmin=pmin, vmax=pmax, extent=extent, cmap=pylab.get_cmap(cmap))
 
-    ax.set_title(var.name)
+    if var.display_name == None:
+        ax.set_title(var.name)
+    else:
+        ax.set_title(var.display_name)
 
     ax.set_xlabel("x")
     ax.set_ylabel("y")
@@ -395,8 +413,8 @@ def main(inFile, outFile, double, plotFile, eps_out):
     dy = (ymax - ymin)/ny
     y = ymin + numpy.arange( (ny), dtype=numpy.float64 )*dy
 
-    gridInfo = grid(xmin=xmin, xmax=xmax, 
-                    ymin=ymin, ymax=ymax, 
+    gridInfo = grid(xmin=xmin, xmax=xmax,
+                    ymin=ymin, ymax=ymax,
                     dx=dx, dy=dy)
 
 
@@ -430,21 +448,21 @@ def main(inFile, outFile, double, plotFile, eps_out):
 
     # setup the figure
     if (double == 1):
-        F = pylab.figure(1, (25.6, 14.4)) 
+        F = pylab.figure(1, (25.6, 14.4))
     else:
-        F = pylab.figure(1, (12.8, 7.2)) 
+        F = pylab.figure(1, (12.8, 7.2))
     F.clf()
 
     if (double == 1):
-        pylab.rcParams.update({'xtick.labelsize': 20,                              
-                               'ytick.labelsize': 20,                              
-                               'text.fontsize': 24})                               
+        pylab.rcParams.update({'xtick.labelsize': 20,
+                               'ytick.labelsize': 20,
+                               'text.fontsize': 24})
 
-        pylab.rc("axes", linewidth=2.0)                                            
-        pylab.rc("lines", markeredgewidth=2.0)    
+        pylab.rc("axes", linewidth=2.0)
+        pylab.rc("lines", markeredgewidth=2.0)
         pylab.rc("font", size=18)
     else:
-        pylab.rc("font", size=9)
+        pylab.rc("font", size=pAttr.font_size)
 
 
     # setup the axes
@@ -468,7 +486,7 @@ def main(inFile, outFile, double, plotFile, eps_out):
         axGrid[5].cax.axis('off')
 
 
-    # write the time   
+    # write the time
     print "writing time"
     F.text(0.1, 0.01, "t = %g s" % (time), transform = F.transFigure, color="k")
 
@@ -519,11 +537,10 @@ if __name__ == "__main__":
 
         if o == "--eps":
             eps_out = 1
-    
+
     try: plotFile = os.path.normpath(next[0])
     except IndexError:
         sys.exit("ERROR: plotfile not specified")
 
 
     main(inFile, outFile, double, plotFile, eps_out)
-
