@@ -356,7 +356,10 @@ subroutine fplotfile_get_data_1d(pltfile, component, mydata, x, nx_max, nx, ierr
 
         p => dataptr(pf, i, j)
 
-        do ii = lbound(p,dim=1), ubound(p,dim=1)
+        lo = lwb(get_box(pf, i, j))
+        hi = upb(get_box(pf, i, j))
+
+        do ii = lo(1), hi(1)
            if ( any(imask(ii*r1:(ii+1)*r1-1) ) ) then
 
               cnt = cnt + 1
@@ -653,7 +656,6 @@ subroutine fplotfile_get_data_3d(pltfile, component, &
         lo = lwb(get_box(pf, i, j))
         hi = upb(get_box(pf, i, j))
 
-
         select case (indir)
 
         case (1)
@@ -664,6 +666,10 @@ subroutine fplotfile_get_data_3d(pltfile, component, &
            if (rr*iloc >= lo(1) .and. rr*iloc <= hi(1)) then
 
               p => dataptr(pf, i, j)
+
+              lo = lwb(get_box(pf, i, j))
+              hi = upb(get_box(pf, i, j))
+
               ii = iloc*rr
 
               ! loop over all of the zones in the patch.  Here, we convert   
@@ -671,8 +677,8 @@ subroutine fplotfile_get_data_3d(pltfile, component, &
               ! corresponding RANGE on the finest level, and test if we've   
               ! stored data in any of those locations.  If we haven't then   
               ! we store this level's data and mark that range as filled.    
-              do kk = lbound(p,dim=3), ubound(p,dim=3)
-                 do jj = lbound(p,dim=2), ubound(p,dim=2)
+              do kk = lo(3), hi(3)
+                 do jj = lo(2), hi(2)
 
                     if ( any(imask(jj*r1:(jj+1)*r1-1, &
                                    kk*r1:(kk+1)*r1-1) ) ) then
@@ -700,6 +706,10 @@ subroutine fplotfile_get_data_3d(pltfile, component, &
            if (rr*jloc >= lo(2) .and. rr*jloc <= hi(2)) then
 
               p => dataptr(pf, i, j)
+
+              lo = lwb(get_box(pf, i, j))
+              hi = upb(get_box(pf, i, j))
+
               jj = jloc*rr
 
               ! loop over all of the zones in the patch.  Here, we convert   
@@ -707,8 +717,8 @@ subroutine fplotfile_get_data_3d(pltfile, component, &
               ! corresponding RANGE on the finest level, and test if we've   
               ! stored data in any of those locations.  If we haven't then   
               ! we store this level's data and mark that range as filled.    
-              do kk = lbound(p,dim=3), ubound(p,dim=3)
-                 do ii = lbound(p,dim=1), ubound(p,dim=1)
+              do kk = lo(3), hi(3)
+                 do ii = lo(1), hi(1)
 
                     if ( any(imask(ii*r1:(ii+1)*r1-1, &
                                    kk*r1:(kk+1)*r1-1) ) ) then
@@ -736,6 +746,10 @@ subroutine fplotfile_get_data_3d(pltfile, component, &
            if (rr*kloc >= lo(3) .and. rr*kloc <= hi(3)) then
 
               p => dataptr(pf, i, j)
+
+              lo = lwb(get_box(pf, i, j))
+              hi = upb(get_box(pf, i, j))
+
               kk = kloc*rr
 
               ! loop over all of the zones in the patch.  Here, we convert   
@@ -743,8 +757,8 @@ subroutine fplotfile_get_data_3d(pltfile, component, &
               ! corresponding RANGE on the finest level, and test if we've   
               ! stored data in any of those locations.  If we haven't then   
               ! we store this level's data and mark that range as filled.    
-              do jj = lbound(p,dim=2), ubound(p,dim=2)
-                 do ii = lbound(p,dim=1), ubound(p,dim=1)
+              do jj = lo(2), hi(2)
+                 do ii = lo(1), hi(1)
 
                     if ( any(imask(ii*r1:(ii+1)*r1-1, &
                                    jj*r1:(jj+1)*r1-1) ) ) then
