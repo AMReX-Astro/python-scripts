@@ -3,7 +3,6 @@
 # a simple script to plot 2-d or 3-d BoxLib data using the matplotlib
 # library
 #
-# 2011-12-02 M. Zingale
 
 import numpy
 import pylab
@@ -392,7 +391,7 @@ def do_plot(plotfile, component, component2, outFile, log,
         #fig.add_axes(pos1)
 
         im=pylab.imshow(data_xy[iy0:iy,ix0:ix],origin='lower', extent=extent, 
-                        vmin=minval, vmax=maxval, axes=pos1)
+                        vmin=minval, vmax=maxval)#, axes=pos1)
 
         pylab.xlabel("x")
         pylab.ylabel("y")
@@ -450,7 +449,7 @@ def do_plot(plotfile, component, component2, outFile, log,
         #fig.add_axes(pos2)
 
         im=pylab.imshow(data_xz[iz0:iz,ix0:ix],origin='lower', extent=extent, 
-                        vmin=minval, vmax=maxval, axes=pos2)
+                        vmin=minval, vmax=maxval) #, axes=pos2)
 
         pylab.xlabel("x")
         pylab.ylabel("z")
@@ -499,7 +498,7 @@ def do_plot(plotfile, component, component2, outFile, log,
         #fig.add_axes(pos3)
 
         im=pylab.imshow(data_yz[iz0:iz,iy0:iy],origin='lower', extent=extent, 
-                        vmin=minval, vmax=maxval, axes=pos3)
+                        vmin=minval, vmax=maxval) #, axes=pos3)
 
         pylab.xlabel("y")
         pylab.ylabel("z")
