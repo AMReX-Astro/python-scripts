@@ -233,7 +233,7 @@ def do_plot(plotfile1, plotfile2, plotfile3, component, outFile,
         labels.append(label3)
 
         
-    pylab.legend(lines, labels)
+    pylab.legend(lines, labels, fontsize="small", frameon=False)
 
 
     formatter = matplotlib.ticker.ScalarFormatter(useMathText=True)
