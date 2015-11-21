@@ -273,7 +273,7 @@ subroutine fplotfile_get_data_1d(pltfile, component, mydata, x, nx_max, nx, ierr
 
   integer :: comp
 
-  integer :: flo(1), fhi(1)
+  integer :: flo(1), fhi(1), lo(1), hi(1)
 
   integer :: max_level
   

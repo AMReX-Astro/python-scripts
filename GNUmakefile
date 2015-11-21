@@ -13,6 +13,7 @@ include $(BOXLIB_HOME)/Tools/F_mk/GMakedefs.mak
 F90FLAGS += -fPIC
 FFLAGS += -fPIC
 CFLAGS += -fPIC
+CXXFLAGS += -fPIC
 
 # core BoxLib directories
 BOXLIB_CORE := Src/F_BaseLib
@@ -30,7 +31,7 @@ VPATH_LOCATIONS += $(Fmlocs)
 all: python_module
 
 python_module: $(objects)
-	f2py --fcompiler=gfortran --f90flags="-J t/Linux.gfortran/m/" -c fsnapshot.f90 -m fsnapshot $(objects)
+	f2py --fcompiler=gfortran --f90flags="-J t/Linux.gfortran/m/" -c fsnapshot.f90 -m fsnapshot $(objects) -lstdc++
 
 include $(BOXLIB_HOME)/Tools/F_mk/GMakerules.mak
 
