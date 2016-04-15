@@ -568,6 +568,15 @@ def usage():
                     (note: if the data < 0 anywhere, then the abs
                      is taken first)
 
+       -x num       minimum x coordinate
+       -X num       maximum x coordinate
+
+       -y num       minimum y coordinate
+       -Y num       maximum y coordinate
+
+       -z num       minimum z coordinate
+       -Z num       maximum z coordinate
+
        --eps        make an EPS plot instead of a PNG
 
        --dpi value  (PNG only) make the plot with the dpi specified by
