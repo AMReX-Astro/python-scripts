@@ -4,9 +4,11 @@
 # library
 #
 
+import matplotlib                                                               
+matplotlib.use('agg')   
+
 import numpy
 import pylab
-import matplotlib
 import os
 import sys
 import getopt

@@ -13,10 +13,12 @@
 # 2012-3-02 R. Orvedahl
 #
 
+import matplotlib                                                               
+matplotlib.use('agg')   
+
 import fsnapshot
 import numpy
 import pylab
-import matplotlib
 import os
 import sys
 import getopt

@@ -5,10 +5,12 @@
 #
 # 2014-03-24 M. Zingale
 
+import matplotlib                                                               
+matplotlib.use('agg')   
+
 import fsnapshot
 import numpy
 import pylab
-import matplotlib
 import os
 import sys
 import getopt
