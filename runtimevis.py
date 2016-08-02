@@ -438,6 +438,7 @@ def main(infile, out_file, double, plot_file, eps_out):
 
     # get the data
     for v in pvars:
+        data = np.zeros( (nx, ny), dtype=np.float64)            
         data, err = fsnapshot.fplotfile_get_data_2d(plot_file, v.name, data)
         if not err == 0:
             sys.exit("ERROR: unable to read {}".format(v.name))
