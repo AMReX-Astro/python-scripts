@@ -35,10 +35,12 @@
 # here, if eps > 0, we will clip the data to this value at the lower end.
 # This prevents us from taking the log of negative numbers
 
+from __future__ import print_function
+
 import matplotlib
 matplotlib.use('Agg')   # this is important for batch mode on machines w/o a display
-import numpy
-import pylab
+import numpy as np
+import matplotlib.pyplot as plt
 import os
 import sys
 import getopt
@@ -46,15 +48,15 @@ import ConfigParser
 import fsnapshot
 
 import math
-import string
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 
-
 #-----------------------------------------------------------------------------
-class variable:
+class Variable(object):
 
-    def __init__(self, name="", minval=None, maxval=None, log=0, eps=-1.0, cmap=None):
+    def __init__(self, name="", minval=None, maxval=None,
+                 log=0, eps=-1.0, cmap=None):
+
         self.name = name
         self.min = minval
         self.max = maxval
@@ -65,32 +67,31 @@ class variable:
         self.display_name = None
 
     def __str__(self):
-        if self.min == None:
-            minStr = "None"
+        if self.min is None:
+            min_str = "None"
         else:
-            minStr = `self.min`
+            min_str = `self.min`
 
-        if self.max == None:
-            maxStr = "None"
+        if self.max is None:
+            max_str = "None"
         else:
-            maxStr = `self.max`
+            max_str = `self.max`
 
-        str = "%s: range = [%s, %s], log = %d" % (self.name, minStr, maxStr, self.log)
-        return str
+        return  "%s: range = [%s, %s], log = %d" % (self.name, min_str, max_str, self.log)
 
 
-class plotAttr:
+class PlotAttr(object):
 
     def __init__(self, numXlabels=None, title=None):
         self.numXlabels = numXlabels
         self.title = title
         self.font_size = 9
-        
 
-class grid:
 
-    def __init__ (self, xmin=0.0, ymin=0.0, xmax=1.0, ymax=1.0,
-                  dx=0.1, dy=0.1):
+class Grid(object):
+
+    def __init__(self, xmin=0.0, ymin=0.0, xmax=1.0, ymax=1.0,
+                 dx=0.1, dy=0.1):
         self.xmin = xmin
         self.xmax = xmax
         self.ymin = ymin
@@ -101,17 +102,17 @@ class grid:
 
 
 #-----------------------------------------------------------------------------
-def parseInfile(inFile):
+def parse_infile(infile):
 
-    vars = []
+    pvars = []
 
-    pAttr = plotAttr()
+    plt_attr = PlotAttr()
 
-    parser=ConfigParser.SafeConfigParser()
+    parser = ConfigParser.SafeConfigParser()
     parser.optionxform = str  # case sensitive
-    parser.read(inFile)
+    parser.read(infile)
 
-    if (parser.sections() == []):
+    if parser.sections() == []:
         sys.exit("ERROR: no variables defined")
 
     for section in parser.sections():
@@ -121,248 +122,268 @@ def parseInfile(inFile):
             for option in parser.options(section):
 
                 if option == "numXlabels":
-                    try: value=parser.getint(section,option)
+                    try: value = parser.getint(section, option)
                     except ValueError:
                         sys.exit("invalid numXlabels value")
 
-                    print "setting : ", value
-                    pAttr.numXlabels = value
+                    print("setting : ", value)
+                    plt_attr.numXlabels = value
 
                 if option == "title":
-                    try: value=parser.get(section,option)
+                    try: value = parser.get(section, option)
                     except ValueError:
                         sys.exit("invalid title value")
 
-                    pAttr.title = value
+                    plt_attr.title = value
 
                 if option == "font_size":
-                    try: value=parser.get(section,option)
+                    try: value = parser.get(section, option)
                     except ValueError:
                         sys.exit("invalid title value")
 
-                    pAttr.font_size = int(value)
-                    
+                    plt_attr.font_size = int(value)
 
         else:
             # a variable
-            vars.append(variable(section))
+            pvars.append(Variable(section))
 
             for option in parser.options(section):
 
                 if option == "min":
-                    try: value=parser.getfloat(section,option)
+                    try: value = parser.getfloat(section, option)
                     except ValueError:
                         sys.exit("invalid min for %s" % (section))
 
-                    vars[len(vars)-1].min = value
+                    pvars[len(pvars)-1].min = value
 
                 elif option == "max":
-                    try: value=parser.getfloat(section,option)
+                    try: value = parser.getfloat(section, option)
                     except ValueError:
                         sys.exit("invalid max for %s" % (section))
 
-                    vars[len(vars)-1].max = value
+                    pvars[len(pvars)-1].max = value
 
                 elif option == "log":
-                    try: value=parser.getint(section,option)
+                    try: value = parser.getint(section, option)
                     except ValueError:
                         sys.exit("invalid log for %s" % (section))
 
-                    vars[len(vars)-1].log = value
+                    pvars[len(pvars)-1].log = value
 
                 elif option == "eps":
-                    try: value=parser.getfloat(section,option)
+                    try: value = parser.getfloat(section, option)
                     except ValueError:
                         sys.exit("invalid eps for %s" % (section))
 
-                    vars[len(vars)-1].eps = value
+                    pvars[len(pvars)-1].eps = value
 
                 elif option == "cmap":
-                    try: value=parser.get(section,option)
+                    try: value = parser.get(section, option)
                     except ValueError:
                         sys.exit("invalid cmap for %s" % (section))
 
-                    vars[len(vars)-1].cmap = value
+                    pvars[len(pvars)-1].cmap = value
 
                 elif option == "display_name":
-                    try: value=parser.get(section,option)
+                    try: value = parser.get(section, option)
                     except ValueError:
                         sys.exit("invalid cmap for %s" % (section))
 
-                    vars[len(vars)-1].display_name = value
+                    pvars[len(pvars)-1].display_name = value
 
                 else:
                     sys.exit("invalid option for %s" % (section))
 
 
-        #print vars[len(vars)-1]   # debugging
-    return pAttr, vars
+    return plt_attr, pvars
 
 
 #-----------------------------------------------------------------------------
-def setupAxes(F, aspectRatio, nvar):
+def setup_axes(fig, aspect_ratio, nvar):
 
     # this is a hack -- the ImageGrid doesn't seem to turn off the
-    # offset text on those axes that don't show the y-axis.  onLeft
+    # offset text on those axes that don't show the y-axis.  on_left
     # will hold the axis indices of those axes that have the y-axis
     # on the very left of the figure, and therefore will show the
     # y-axis labels
-    onLeft = []
+    on_left = []
 
-    if (aspectRatio == "h"):
+    if aspect_ratio == "h":
 
         # for <= 3 variables, do a single column
         # for 4 <= # var <= 6, do two columns
 
-        if (nvar <= 3):
-            axGrid = ImageGrid(F, 111, # similar to subplot(111)
-                               nrows_ncols = (nvar, 1), direction="row",
-                               axes_pad = 0.5 ,
-                               add_all=True,
-                               label_mode = "L",
-                               share_all = True,
-                               cbar_location="bottom", cbar_mode="each",
-                               cbar_size="5%", cbar_pad="15%")
+        if nvar <= 3:
+            axg = ImageGrid(fig, 111, # similar to subplot(111)
+                            nrows_ncols=(nvar, 1),
+                            direction="row",
+                            axes_pad=0.5,
+                            add_all=True,
+                            label_mode="L",
+                            share_all=True,
+                            cbar_location="bottom",
+                            cbar_mode="each",
+                            cbar_size="5%",
+                            cbar_pad="15%")
 
             # all axes touch the left of the figure
-            onLeft = list(range(nvar))
+            on_left = list(range(nvar))
 
-        elif (nvar == 4):
-            axGrid = ImageGrid(F, 111, # similar to subplot(111)
-                               nrows_ncols = (2, 2), direction="row",
-                               axes_pad = 0.5 ,
-                               add_all=True,
-                               label_mode = "L",
-                               share_all = True,
-                               cbar_location="bottom", cbar_mode="each",
-                               cbar_size="5%", cbar_pad="15%")
+        elif nvar == 4:
+            axg = ImageGrid(fig, 111, # similar to subplot(111)
+                            nrows_ncols=(2, 2),
+                            direction="row",
+                            axes_pad=0.5,
+                            add_all=True,
+                            label_mode="L",
+                            share_all=True,
+                            cbar_location="bottom",
+                            cbar_mode="each",
+                            cbar_size="5%",
+                            cbar_pad="15%")
 
-            onLeft = [0, 2]
+            on_left = [0, 2]
 
         else:
-            axGrid = ImageGrid(F, 111, # similar to subplot(111)
-                               nrows_ncols = (3, 2), direction="row",
-                               axes_pad = 0.5 ,
-                               add_all=True,
-                               label_mode = "L",
-                               share_all = True,
-                               cbar_location="bottom", cbar_mode="each",
-                               cbar_size="5%", cbar_pad="20%")
+            axg = ImageGrid(fig, 111, # similar to subplot(111)
+                            nrows_ncols=(3, 2),
+                            direction="row",
+                            axes_pad=0.5,
+                            add_all=True,
+                            label_mode="L",
+                            share_all=True,
+                            cbar_location="bottom",
+                            cbar_mode="each",
+                            cbar_size="5%",
+                            cbar_pad="20%")
 
-            onLeft = [0, 2, 4]
+            on_left = [0, 2, 4]
 
-    elif (aspectRatio == "v"):
+    elif aspect_ratio == "v":
 
         # always do 1 row -- just much with the spacings here
 
-        if (nvar <= 4):
-            axGrid = ImageGrid(F, 111, # similar to subplot(111)
-                               nrows_ncols = (1, nvar), direction="row",
-                               axes_pad = 0.5 ,
-                               add_all=True,
-                               label_mode = "L",
-                               share_all = True,
-                               cbar_location="bottom", cbar_mode="each",
-                               cbar_size="3%", cbar_pad="8%")
+        if nvar <= 4:
+            axg = ImageGrid(fig, 111, # similar to subplot(111)
+                            nrows_ncols=(1, nvar),
+                            direction="row",
+                            axes_pad=0.5,
+                            add_all=True,
+                            label_mode="L",
+                            share_all=True,
+                            cbar_location="bottom",
+                            cbar_mode="each",
+                            cbar_size="3%",
+                            cbar_pad="8%")
 
-            onLeft = [0]
+            on_left = [0]
 
         else:
-            axGrid = ImageGrid(F, 111, # similar to subplot(111)
-                               nrows_ncols = (1, nvar), direction="row",
-                               axes_pad = 0.2 ,
-                               add_all=True,
-                               label_mode = "L",
-                               share_all = True,
-                               cbar_location="bottom", cbar_mode="each",
-                               cbar_size="5%", cbar_pad="15%")
+            axg = ImageGrid(fig, 111, # similar to subplot(111)
+                            nrows_ncols=(1, nvar),
+                            direction="row",
+                            axes_pad=0.2,
+                            add_all=True,
+                            label_mode="L",
+                            share_all=True,
+                            cbar_location="bottom",
+                            cbar_mode="each",
+                            cbar_size="5%",
+                            cbar_pad="15%")
 
-            onLeft = [0]
+            on_left = [0]
 
     else:
 
         # for <= 3 variables, do a single row
         # for 4 <= # var <= 6, do 2 rows.
-        if (nvar <= 3):
-            axGrid = ImageGrid(F, 111, # similar to subplot(111)
-                               nrows_ncols = (1, nvar), direction="row",
-                               axes_pad = 0.5 ,
-                               add_all=True,
-                               label_mode = "L",
-                               share_all = True,
-                               cbar_location="bottom", cbar_mode="each",
-                               cbar_size="5%", cbar_pad="10%")
+        if nvar <= 3:
+            axg = ImageGrid(fig, 111, # similar to subplot(111)
+                            nrows_ncols=(1, nvar),
+                            direction="row",
+                            axes_pad=0.5,
+                            add_all=True,
+                            label_mode="L",
+                            share_all=True,
+                            cbar_location="bottom",
+                            cbar_mode="each",
+                            cbar_size="5%",
+                            cbar_pad="10%")
 
-            onLeft = [0]
+            on_left = [0]
 
-        elif (nvar == 4):
-            axGrid = ImageGrid(F, 111, # similar to subplot(111)
-                               nrows_ncols = (2, 2), direction="row",
-                               axes_pad = 0.5 ,
-                               add_all=True,
-                               label_mode = "L",
-                               share_all = True,
-                               cbar_location="bottom", cbar_mode="each",
-                               cbar_size="5%", cbar_pad="15%")
+        elif nvar == 4:
+            axg = ImageGrid(fig, 111, # similar to subplot(111)
+                            nrows_ncols=(2, 2),
+                            direction="row",
+                            axes_pad=0.5,
+                            add_all=True,
+                            label_mode="L",
+                            share_all=True,
+                            cbar_location="bottom",
+                            cbar_mode="each",
+                            cbar_size="5%",
+                            cbar_pad="15%")
 
-            onLeft = [0, 2]
+            on_left = [0, 2]
 
         else:
-            axGrid = ImageGrid(F, 111, # similar to subplot(111)
-                               nrows_ncols = (2, 3), direction="row",
-                               axes_pad = 0.5 ,
-                               add_all=True,
-                               label_mode = "L",
-                               share_all = True,
-                               cbar_location="bottom", cbar_mode="each",
-                               cbar_size="5%", cbar_pad="15%")
+            axg = ImageGrid(fig, 111, # similar to subplot(111)
+                            nrows_ncols=(2, 3),
+                            direction="row",
+                            axes_pad=0.5,
+                            add_all=True,
+                            label_mode="L",
+                            share_all=True,
+                            cbar_location="bottom",
+                            cbar_mode="each",
+                            cbar_size="5%",
+                            cbar_pad="15%")
 
-            onLeft = [0, 3]
+            on_left = [0, 3]
 
-    return axGrid, onLeft
+    return axg, on_left
 
 
 #-----------------------------------------------------------------------------
-def doPlot(ax, grd, pAttr, var, yoffset):
+def do_plot(ax, grd, plt_attr, var, yoffset):
     extent = [grd.xmin, grd.xmax, grd.ymin, grd.ymax]
 
-    defaultCmap = pylab.get_cmap("jet")
+    cmap = plt.get_cmap("viridis")
 
     if var.log:
 
-        if (var.eps > 0):
+        if var.eps > 0:
             # clip the data to prevent logs of negative numbers
-            pData = var.data.copy()
-            pData[pData < var.eps] = var.eps
-            pData = numpy.log10(pData)
+            pdata = var.data.copy()
+            pdata[pdata < var.eps] = var.eps
+            pdata = np.log10(pdata)
         else:
-            pData = numpy.log10(var.data)
+            pdata = np.log10(var.data)
 
-        if (not var.min == None):
+        if var.min is not None:
             pmin = math.log10(var.min)
         else:
             pmin = None
-        if (not var.max == None):
+        if var.max is not None:
             pmax = math.log10(var.max)
         else:
             pmax = None
     else:
-        pData = var.data
+        pdata = var.data
         pmin = var.min
         pmax = var.max
 
     formatter = matplotlib.ticker.ScalarFormatter(useMathText=True)
-    formatter.set_powerlimits((-3,3))
+    formatter.set_powerlimits((-3, 3))
 
-    if var.cmap == None:
-        cmap = defaultCmap
-    else:
+    if var.cmap is not None:
         cmap = var.cmap
 
-    im = ax.imshow(pData, origin="lower", interpolation="nearest",
-                   vmin=pmin, vmax=pmax, extent=extent, cmap=pylab.get_cmap(cmap))
+    im = ax.imshow(pdata, origin="lower", interpolation="nearest",
+                   vmin=pmin, vmax=pmax, extent=extent, cmap=plt.get_cmap(cmap))
 
-    if var.display_name == None:
+    if var.display_name is None:
         ax.set_title(var.name)
     else:
         ax.set_title(var.display_name)
@@ -370,167 +391,158 @@ def doPlot(ax, grd, pAttr, var, yoffset):
     ax.set_xlabel("x")
     ax.set_ylabel("y")
 
-    ax.xaxis.set_major_formatter(pylab.ScalarFormatter(useMathText=True))
-    ax.yaxis.set_major_formatter(pylab.ScalarFormatter(useMathText=True))
+    ax.xaxis.set_major_formatter(plt.ScalarFormatter(useMathText=True))
+    ax.yaxis.set_major_formatter(plt.ScalarFormatter(useMathText=True))
 
-    print pAttr.numXlabels
-    if (not pAttr.numXlabels == None):
-        print "here"
-
-        xtickvals = grd.xmin + numpy.arange(pAttr.numXlabels)*(grd.xmax - grd.xmin)/pAttr.numXlabels
-        print xtickvals
+    if plt_attr.numXlabels is not None:
+        dx_tick = (grd.xmax - grd.xmin)/plt_attr.numXlabels
+        xtickvals = grd.xmin + np.arange(plt_attr.numXlabels)*dx_tick
         ax.set_xticks(xtickvals)
 
-
-    if (not yoffset):
+    if not yoffset:
         ax.yaxis.offsetText.set_visible(False)
 
     ax.cax.colorbar(im, format=formatter)
 
 
 #-----------------------------------------------------------------------------
-def main(inFile, outFile, double, plotFile, eps_out):
+def main(infile, out_file, double, plot_file, eps_out):
 
     # get a list of variable objects that contains the information
     # about what to plot
-    pAttr, vars = parseInfile(inFile)
+    plt_attr, pvars = parse_infile(infile)
 
-    nvar = len(vars)
-
+    nvar = len(pvars)
 
     # get and store the grid info
-    (nx, ny, nz) = fsnapshot.fplotfile_get_size(plotFile)
-    if (not nz == -1):
+    nx, ny, nz = fsnapshot.fplotfile_get_size(plot_file)
+    if not nz == -1:
         sys.exit("ERROR: cannot read a 3-d dataset")
 
-
     (xmin, xmax, ymin, ymax, zmin, zmax) = \
-        fsnapshot.fplotfile_get_limits(plotFile)
+        fsnapshot.fplotfile_get_limits(plot_file)
 
+    # cell-centered grid
     dx = (xmax - xmin)/nx
-    x = xmin + numpy.arange( (nx), dtype=numpy.float64 )*dx
+    x = np.linspace(xmin + 0.5*dx, xmax - 0.5*dx, nx, endpoint=True)
 
     dy = (ymax - ymin)/ny
-    y = ymin + numpy.arange( (ny), dtype=numpy.float64 )*dy
+    y = np.linspace(ymin + 0.5*dy, ymax - 0.5*dy, ny, endpoint=True)
 
-    gridInfo = grid(xmin=xmin, xmax=xmax,
-                    ymin=ymin, ymax=ymax,
-                    dx=dx, dy=dy)
+    grid_info = Grid(xmin=xmin, xmax=xmax,
+                     ymin=ymin, ymax=ymax,
+                     dx=dx, dy=dy)
 
-
-    time = fsnapshot.fplotfile_get_time(plotFile)
+    time = fsnapshot.fplotfile_get_time(plot_file)
 
 
     # get the data
-    for v in vars:
-        data = numpy.zeros( (nx, ny), dtype=numpy.float64 )
-        (data, err) = fsnapshot.fplotfile_get_data_2d(plotFile, v.name, data)
-        if (not err == 0):
-            sys.exit("ERROR: unable to read %s" % (v.name) )
+    for v in pvars:
+        data, err = fsnapshot.fplotfile_get_data_2d(plot_file, v.name, data)
+        if not err == 0:
+            sys.exit("ERROR: unable to read {}".format(v.name))
 
-        v.data = numpy.transpose(data)
+        v.data = np.transpose(data)
 
 
     # find the aspect ratio:
     #
-    # aspectRatio = "h" means horizontal
+    # aspect_ratio = "h" means horizontal
     #               "v" means vertical
     #               "s" means square (to some degree...)
 
-    if (nx >= 2*ny):
-        aspectRatio = "h"
-    elif (ny >= 1.5*nx):
-        aspectRatio = "v"
+    if nx >= 2*ny:
+        aspect_ratio = "h"
+    elif ny >= 1.5*nx:
+        aspect_ratio = "v"
     else:
-        aspectRatio = "s"
-
-
+        aspect_ratio = "s"
 
     # setup the figure
-    if (double == 1):
-        F = pylab.figure(1, (25.6, 14.4))
+    if double == 1:
+        fig = plt.figure(1, (25.6, 14.4))
     else:
-        F = pylab.figure(1, (12.8, 7.2))
-    F.clf()
+        fig = plt.figure(1, (12.8, 7.2))
+    fig.clf()
 
-    if (double == 1):
-        pylab.rcParams.update({'xtick.labelsize': 20,
-                               'ytick.labelsize': 20,
-                               'text.fontsize': 24})
+    if double == 1:
+        plt.rcParams.update({'xtick.labelsize': 20,
+                             'ytick.labelsize': 20,
+                             'text.fontsize': 24})
 
-        pylab.rc("axes", linewidth=2.0)
-        pylab.rc("lines", markeredgewidth=2.0)
-        pylab.rc("font", size=18)
+        plt.rc("axes", linewidth=2.0)
+        plt.rc("lines", markeredgewidth=2.0)
+        plt.rc("font", size=18)
     else:
-        pylab.rc("font", size=pAttr.font_size)
+        plt.rc("font", size=plt_attr.font_size)
 
 
     # setup the axes
-    axGrid, onLeft = setupAxes(F, aspectRatio, nvar)
+    axg, on_left = setup_axes(fig, aspect_ratio, nvar)
 
     # plot the data
-    n = 0
-    while (n < nvar):
+    for n in range(nvar):
         yoffset = 0
-        if n in onLeft:
+        if n in on_left:
             yoffset = 1
 
-        doPlot(axGrid[n], gridInfo, pAttr, vars[n], yoffset)
-        n += 1
+        do_plot(axg[n], grid_info, plt_attr, pvars[n], yoffset)
 
 
-    # 5 variables is a tricky case
-    if (nvar == 5 and (aspectRatio == "h" or aspectRatio == "s")):
+    # 5 variables is a tricky case (since the grid stores 6)
+    if nvar == 5 and (aspect_ratio == "h" or aspect_ratio == "s"):
         # turn off the last axes
-        axGrid[5].axis('off')
-        axGrid[5].cax.axis('off')
+        axg[5].axis('off')
+        axg[5].cax.axis('off')
 
 
     # write the time
-    print "writing time"
-    F.text(0.1, 0.01, "t = %g s" % (time), transform = F.transFigure, color="k")
+    fig.text(0.1, 0.01, "t = %g s" % (time),
+             transform=fig.transFigure, color="k")
 
     # automatically make things look better
-    try: F.tight_layout(pad=2.0,w_pad=5.0)  # requires matplotlib >= 1.1
+    try: fig.tight_layout(pad=2.0, w_pad=5.0)  # requires matplotlib >= 1.1
     except:
         pass
 
-    if not pAttr.title == None:
-        F.text(0.5, 0.95, pAttr.title, transform = F.transFigure, color="k", horizontalalignment="center", fontsize=16)
+    if plt_attr.title is not None:
+        fig.text(0.5, 0.95, plt_attr.title,
+                 transform=fig.transFigure, color="k",
+                 horizontalalignment="center", fontsize=16)
 
 
-    if outFile == None:
+    if out_file is None:
         if eps_out == 1:
-            pylab.savefig("%s.eps" % (plotFile) )
+            plt.savefig("%s.eps" % (plot_file))
         else:
-            pylab.savefig("%s.png" % (plotFile) )
+            plt.savefig("%s.png" % (plot_file))
 
     else:
         if eps_out == 1:
-            pylab.savefig("%s" % (outFile) )
+            plt.savefig("%s" % (out_file))
         else:
-            pylab.savefig("%s" % (outFile) )
+            plt.savefig("%s" % (out_file))
 
 
 
 if __name__ == "__main__":
 
     # parse the commandline options
-    inFile = "vis.in"
-    outFile = None
+    infile = "vis.in"
+    out_file = None
     double = 0
     eps_out = 0
 
-    try: opts, next = getopt.getopt(sys.argv[1:], "i:o:d", ["eps"])
+    try: opts, next_arg = getopt.getopt(sys.argv[1:], "i:o:d", ["eps"])
     except getopt.GetoptError:
         sys.exit("ERROR: invalid calling sequence")
 
     for o, a in opts:
         if o == "-i":
-            inFile = a
+            infile = a
 
         if o == "-o":
-            outFile = a
+            out_file = a
 
         if o == "-d":
             double = 1
@@ -538,9 +550,9 @@ if __name__ == "__main__":
         if o == "--eps":
             eps_out = 1
 
-    try: plotFile = os.path.normpath(next[0])
+    try: plot_file = os.path.normpath(next_arg[0])
     except IndexError:
         sys.exit("ERROR: plotfile not specified")
 
 
-    main(inFile, outFile, double, plotFile, eps_out)
+    main(infile, out_file, double, plot_file, eps_out)
