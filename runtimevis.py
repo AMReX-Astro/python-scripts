@@ -81,12 +81,19 @@ class Variable(object):
 
 
 class PlotAttr(object):
+    """ attributes for the entire domain, regardless of variable """
 
-    def __init__(self, numXlabels=None, title=None):
-        self.numXlabels = numXlabels
+    def __init__(self, num_xlabels=None, title=None,
+                 xmin=None, xmax=None, ymin=None, ymax=None):
+        self.num_xlabels = num_xlabels
         self.title = title
+
         self.font_size = 9
 
+        self.xmin = xmin
+        self.xmax = xmax
+        self.ymin = ymin
+        self.ymax = ymax
 
 class Grid(object):
 
@@ -121,13 +128,13 @@ def parse_infile(infile):
             # general plot attributes
             for option in parser.options(section):
 
-                if option == "numXlabels":
+                if option == "num_xlabels":
                     try: value = parser.getint(section, option)
                     except ValueError:
-                        sys.exit("invalid numXlabels value")
+                        sys.exit("invalid num_xlabels value")
 
                     print("setting : ", value)
-                    plt_attr.numXlabels = value
+                    plt_attr.num_xlabels = value
 
                 if option == "title":
                     try: value = parser.get(section, option)
@@ -142,6 +149,35 @@ def parse_infile(infile):
                         sys.exit("invalid title value")
 
                     plt_attr.font_size = int(value)
+
+                if option == "xmin":
+                    try: value = parser.get(section, option)
+                    except ValueError:
+                        sys.exit("invalid xmin value")
+
+                    plt_attr.xmin = value
+
+                if option == "xmax":
+                    try: value = parser.get(section, option)
+                    except ValueError:
+                        sys.exit("invalid xmax value")
+
+                    plt_attr.xmax = value
+
+                if option == "ymin":
+                    try: value = parser.get(section, option)
+                    except ValueError:
+                        sys.exit("invalid ymin value")
+
+                    plt_attr.ymin = value
+
+                if option == "ymax":
+                    try: value = parser.get(section, option)
+                    except ValueError:
+                        sys.exit("invalid ymax value")
+
+                    plt_attr.ymax = value
+
 
         else:
             # a variable
@@ -394,9 +430,9 @@ def do_plot(ax, grd, plt_attr, var, yoffset):
     ax.xaxis.set_major_formatter(plt.ScalarFormatter(useMathText=True))
     ax.yaxis.set_major_formatter(plt.ScalarFormatter(useMathText=True))
 
-    if plt_attr.numXlabels is not None:
-        dx_tick = (grd.xmax - grd.xmin)/plt_attr.numXlabels
-        xtickvals = grd.xmin + np.arange(plt_attr.numXlabels)*dx_tick
+    if plt_attr.num_xlabels is not None:
+        dx_tick = (grd.xmax - grd.xmin)/plt_attr.num_xlabels
+        xtickvals = grd.xmin + np.arange(plt_attr.num_xlabels)*dx_tick
         ax.set_xticks(xtickvals)
 
     if not yoffset:
@@ -429,6 +465,9 @@ def main(infile, out_file, double, plot_file, eps_out):
     dy = (ymax - ymin)/ny
     y = np.linspace(ymin + 0.5*dy, ymax - 0.5*dy, ny, endpoint=True)
 
+    # the grid info will refer to the view, not the true size on disk.
+    # so we use the values read in from the input file to override
+    # the actual extent
     grid_info = Grid(xmin=xmin, xmax=xmax,
                      ymin=ymin, ymax=ymax,
                      dx=dx, dy=dy)
