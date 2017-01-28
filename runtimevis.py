@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # support doing runtime visualization in 2-d.
 #
@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 import getopt
-import ConfigParser
+import configparser
 import fsnapshot
 
 import math
@@ -70,14 +70,14 @@ class Variable(object):
         if self.min is None:
             min_str = "None"
         else:
-            min_str = `self.min`
+            min_str = "{}".format(self.min)
 
         if self.max is None:
             max_str = "None"
         else:
-            max_str = `self.max`
+            max_str = "{}".format(self.max)
 
-        return  "%s: range = [%s, %s], log = %d" % (self.name, min_str, max_str, self.log)
+        return  "{}: range = [{}, {}], log = {}".format(self.name, min_str, max_str, self.log)
 
 
 class PlotAttr(object):
@@ -90,22 +90,83 @@ class PlotAttr(object):
 
         self.font_size = 9
 
+        # this will be what the user requests, and can be a zoom in on the
+        # full domain
         self.xmin = xmin
         self.xmax = xmax
         self.ymin = ymin
         self.ymax = ymax
 
 class Grid(object):
+    """ this is a container that holds the information required to interpret
+        the data for the plot window.  pa is the PlotAttr object that gives
+        the extrema that the user requests.  We compare those to the physical
+        extent (which comes in through xmin, xmax, ... """
 
-    def __init__(self, xmin=0.0, ymin=0.0, xmax=1.0, ymax=1.0,
-                 dx=0.1, dy=0.1):
+    def __init__(self, pa,
+                 xmin=0.0, ymin=0.0, xmax=1.0, ymax=1.0,
+                 nx=-1, ny=-1):
+
+        # these are the actual sizes on disk
         self.xmin = xmin
         self.xmax = xmax
         self.ymin = ymin
         self.ymax = ymax
 
-        self.dx = dx
-        self.dy = dy
+        self.nx = nx
+        self.ny = ny
+
+        # cell-centered grid -- for the whole domain
+        self.dx = (xmax - xmin)/nx
+        self.x = np.linspace(xmin + 0.5*self.dx, xmax - 0.5*self.dx, nx, endpoint=True)
+
+        self.dy = (ymax - ymin)/ny
+        self.y = np.linspace(ymin + 0.5*self.dy, ymax - 0.5*self.dy, ny, endpoint=True)
+
+
+        # the grid info will refer to the view, not the true size on disk.
+        # so we use the values read in from the input file to override
+        # the actual extent
+        if pa.xmin is not None:
+            xmin_use = max(pa.xmin, xmin)
+        else:
+            xmin_use = xmin
+
+        if pa.xmax is not None:
+            xmax_use = min(pa.xmax, xmax)
+        else:
+            xmax_use = xmax
+
+        if pa.ymin is not None:
+            ymin_use = max(pa.ymin, ymin)
+        else:
+            ymin_use = ymin
+
+        if pa.ymax is not None:
+            ymax_use = min(pa.ymax, ymax)
+        else:
+            ymax_use = ymax
+
+        print("in grid_object: ", xmax, pa.xmax, xmax_use)
+
+        # these are what we want to plot
+        self.pxmin = xmin_use
+        self.pxmax = xmax_use
+        self.pymin = ymin_use
+        self.pymax = ymax_use
+
+        # for the aspect ratio
+        self.W = self.pxmax - self.pxmin
+        self.H = self.pymax - self.pymin
+
+        # for indexing our uniform data array
+        self.ix0 = int((xmin_use - xmin)/self.dx)
+        self.iy0 = int((ymin_use - ymin)/self.dy)
+        self.ix = int((xmax_use - xmin)/self.dx)
+        print("in grid_object: ", self.ix, self.nx)
+
+        self.iy = int((ymax_use - ymin)/self.dy)
+
 
 
 #-----------------------------------------------------------------------------
@@ -115,7 +176,7 @@ def parse_infile(infile):
 
     plt_attr = PlotAttr()
 
-    parser = ConfigParser.SafeConfigParser()
+    parser = configparser.SafeConfigParser()
     parser.optionxform = str  # case sensitive
     parser.read(infile)
 
@@ -129,7 +190,8 @@ def parse_infile(infile):
             for option in parser.options(section):
 
                 if option == "num_xlabels":
-                    try: value = parser.getint(section, option)
+                    try:
+                        value = parser.getint(section, option)
                     except ValueError:
                         sys.exit("invalid num_xlabels value")
 
@@ -137,46 +199,52 @@ def parse_infile(infile):
                     plt_attr.num_xlabels = value
 
                 if option == "title":
-                    try: value = parser.get(section, option)
+                    try:
+                        value = parser.get(section, option)
                     except ValueError:
                         sys.exit("invalid title value")
 
                     plt_attr.title = value
 
                 if option == "font_size":
-                    try: value = parser.get(section, option)
+                    try:
+                        value = parser.get(section, option)
                     except ValueError:
                         sys.exit("invalid title value")
 
                     plt_attr.font_size = int(value)
 
                 if option == "xmin":
-                    try: value = parser.get(section, option)
+                    try:
+                        value = parser.get(section, option)
                     except ValueError:
                         sys.exit("invalid xmin value")
 
-                    plt_attr.xmin = value
+                    plt_attr.xmin = float(value)
 
                 if option == "xmax":
-                    try: value = parser.get(section, option)
+                    try:
+                        value = parser.get(section, option)
                     except ValueError:
                         sys.exit("invalid xmax value")
 
-                    plt_attr.xmax = value
+                    plt_attr.xmax = float(value)
 
                 if option == "ymin":
-                    try: value = parser.get(section, option)
+                    try:
+                        value = parser.get(section, option)
                     except ValueError:
                         sys.exit("invalid ymin value")
 
-                    plt_attr.ymin = value
+                    plt_attr.ymin = float(value)
 
                 if option == "ymax":
-                    try: value = parser.get(section, option)
+                    try:
+                        value = parser.get(section, option)
                     except ValueError:
                         sys.exit("invalid ymax value")
 
-                    plt_attr.ymax = value
+                    plt_attr.ymax = float(value)
 
 
         else:
@@ -186,46 +254,52 @@ def parse_infile(infile):
             for option in parser.options(section):
 
                 if option == "min":
-                    try: value = parser.getfloat(section, option)
+                    try:
+                        value = parser.getfloat(section, option)
                     except ValueError:
                         sys.exit("invalid min for %s" % (section))
 
-                    pvars[len(pvars)-1].min = value
+                    pvars[-1].min = value
 
                 elif option == "max":
-                    try: value = parser.getfloat(section, option)
+                    try:
+                        value = parser.getfloat(section, option)
                     except ValueError:
                         sys.exit("invalid max for %s" % (section))
 
-                    pvars[len(pvars)-1].max = value
+                    pvars[-1].max = value
 
                 elif option == "log":
-                    try: value = parser.getint(section, option)
+                    try:
+                        value = parser.getint(section, option)
                     except ValueError:
                         sys.exit("invalid log for %s" % (section))
 
-                    pvars[len(pvars)-1].log = value
+                    pvars[-1].log = value
 
                 elif option == "eps":
-                    try: value = parser.getfloat(section, option)
+                    try:
+                        value = parser.getfloat(section, option)
                     except ValueError:
                         sys.exit("invalid eps for %s" % (section))
 
-                    pvars[len(pvars)-1].eps = value
+                    pvars[-1].eps = value
 
                 elif option == "cmap":
-                    try: value = parser.get(section, option)
+                    try:
+                        value = parser.get(section, option)
                     except ValueError:
                         sys.exit("invalid cmap for %s" % (section))
 
-                    pvars[len(pvars)-1].cmap = value
+                    pvars[-1].cmap = value
 
                 elif option == "display_name":
-                    try: value = parser.get(section, option)
+                    try:
+                        value = parser.get(section, option)
                     except ValueError:
                         sys.exit("invalid cmap for %s" % (section))
 
-                    pvars[len(pvars)-1].display_name = value
+                    pvars[-1].display_name = value
 
                 else:
                     sys.exit("invalid option for %s" % (section))
@@ -382,8 +456,8 @@ def setup_axes(fig, aspect_ratio, nvar):
 
 
 #-----------------------------------------------------------------------------
-def do_plot(ax, grd, plt_attr, var, yoffset):
-    extent = [grd.xmin, grd.xmax, grd.ymin, grd.ymax]
+def do_plot(ax, gi, plt_attr, var, yoffset):
+    extent = [gi.pxmin, gi.pxmax, gi.pymin, gi.pymax]
 
     cmap = plt.get_cmap("viridis")
 
@@ -416,13 +490,19 @@ def do_plot(ax, grd, plt_attr, var, yoffset):
     if var.cmap is not None:
         cmap = var.cmap
 
-    im = ax.imshow(pdata, origin="lower", interpolation="nearest",
+    print("here: ", gi.ix, gi.ix0, gi.nx)
+
+    im = ax.imshow(pdata[gi.iy0:gi.iy,gi.ix0:gi.ix],
+                   origin="lower", interpolation="nearest",
                    vmin=pmin, vmax=pmax, extent=extent, cmap=plt.get_cmap(cmap))
 
     if var.display_name is None:
         ax.set_title(var.name)
     else:
         ax.set_title(var.display_name)
+
+    ax.set_xlim(gi.pxmin, gi.pxmax)
+    ax.set_ylim(gi.pymin, gi.pymax)
 
     ax.set_xlabel("x")
     ax.set_ylabel("y")
@@ -431,14 +511,14 @@ def do_plot(ax, grd, plt_attr, var, yoffset):
     ax.yaxis.set_major_formatter(plt.ScalarFormatter(useMathText=True))
 
     if plt_attr.num_xlabels is not None:
-        dx_tick = (grd.xmax - grd.xmin)/plt_attr.num_xlabels
-        xtickvals = grd.xmin + np.arange(plt_attr.num_xlabels)*dx_tick
+        dx_tick = (gi.pxmax - gi.pxmin)/plt_attr.num_xlabels
+        xtickvals = gi.pxmin + np.arange(plt_attr.num_xlabels)*dx_tick
         ax.set_xticks(xtickvals)
 
     if not yoffset:
         ax.yaxis.offsetText.set_visible(False)
 
-    ax.cax.colorbar(im, format=formatter)
+    ax.cax.colorbar(im) #, format=formatter)
 
 
 #-----------------------------------------------------------------------------
@@ -458,26 +538,16 @@ def main(infile, out_file, double, plot_file, eps_out):
     (xmin, xmax, ymin, ymax, zmin, zmax) = \
         fsnapshot.fplotfile_get_limits(plot_file)
 
-    # cell-centered grid
-    dx = (xmax - xmin)/nx
-    x = np.linspace(xmin + 0.5*dx, xmax - 0.5*dx, nx, endpoint=True)
-
-    dy = (ymax - ymin)/ny
-    y = np.linspace(ymin + 0.5*dy, ymax - 0.5*dy, ny, endpoint=True)
-
-    # the grid info will refer to the view, not the true size on disk.
-    # so we use the values read in from the input file to override
-    # the actual extent
-    grid_info = Grid(xmin=xmin, xmax=xmax,
-                     ymin=ymin, ymax=ymax,
-                     dx=dx, dy=dy)
+    gi = Grid(plt_attr,
+              xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax,
+              nx=nx, ny=ny)
 
     time = fsnapshot.fplotfile_get_time(plot_file)
 
 
     # get the data
     for v in pvars:
-        data = np.zeros( (nx, ny), dtype=np.float64)            
+        data = np.zeros( (nx, ny), dtype=np.float64)
         data, err = fsnapshot.fplotfile_get_data_2d(plot_file, v.name, data)
         if not err == 0:
             sys.exit("ERROR: unable to read {}".format(v.name))
@@ -488,12 +558,12 @@ def main(infile, out_file, double, plot_file, eps_out):
     # find the aspect ratio:
     #
     # aspect_ratio = "h" means horizontal
-    #               "v" means vertical
-    #               "s" means square (to some degree...)
+    #                "v" means vertical
+    #                "s" means square (to some degree...)
 
-    if nx >= 2*ny:
+    if gi.W >= 2*gi.H:
         aspect_ratio = "h"
-    elif ny >= 1.5*nx:
+    elif gi.H >= 1.5*gi.W:
         aspect_ratio = "v"
     else:
         aspect_ratio = "s"
@@ -526,7 +596,7 @@ def main(infile, out_file, double, plot_file, eps_out):
         if n in on_left:
             yoffset = 1
 
-        do_plot(axg[n], grid_info, plt_attr, pvars[n], yoffset)
+        do_plot(axg[n], gi, plt_attr, pvars[n], yoffset)
 
 
     # 5 variables is a tricky case (since the grid stores 6)

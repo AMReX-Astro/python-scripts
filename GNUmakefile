@@ -31,7 +31,7 @@ VPATH_LOCATIONS += $(Fmlocs)
 all: python_module
 
 python_module: $(objects)
-	f2py --fcompiler=gfortran --f90flags="-J t/Linux.gfortran/m/" -c fsnapshot.f90 -m fsnapshot $(objects) -lstdc++
+	f2py3 --fcompiler=gfortran --f90flags="-J t/Linux.gfortran/m/" -c fsnapshot.f90 -m fsnapshot $(objects) -lstdc++
 
 include $(BOXLIB_HOME)/Tools/F_mk/GMakerules.mak
 
