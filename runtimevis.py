@@ -147,8 +147,6 @@ class Grid(object):
         else:
             ymax_use = ymax
 
-        print("in grid_object: ", xmax, pa.xmax, xmax_use)
-
         # these are what we want to plot
         self.pxmin = xmin_use
         self.pxmax = xmax_use
@@ -489,8 +487,6 @@ def do_plot(ax, gi, plt_attr, var, yoffset):
 
     if var.cmap is not None:
         cmap = var.cmap
-
-    print("here: ", gi.ix, gi.ix0, gi.nx)
 
     im = ax.imshow(pdata[gi.iy0:gi.iy,gi.ix0:gi.ix],
                    origin="lower", interpolation="nearest",
