@@ -7,7 +7,7 @@ COMP := gfortran
 
 
 # include the main Makefile stuff
-include $(BOXLIB_HOME)/Tools/F_mk/GMakedefs.mak
+include $(FBOXLIB_HOME)/Tools/F_mk/GMakedefs.mak
 
 # to make python libraries, we need to do -fPIC (in gfortran)
 F90FLAGS += -fPIC
@@ -16,10 +16,10 @@ CFLAGS += -fPIC
 CXXFLAGS += -fPIC
 
 # core BoxLib directories
-BOXLIB_CORE := Src/F_BaseLib
+BOXLIB_CORE := Src/BaseLib
 
-Fmpack := $(foreach dir, $(BOXLIB_CORE), $(BOXLIB_HOME)/$(dir)/GPackage.mak)
-Fmlocs := $(foreach dir, $(BOXLIB_CORE), $(BOXLIB_HOME)/$(dir))
+Fmpack := $(foreach dir, $(BOXLIB_CORE), $(FBOXLIB_HOME)/$(dir)/GPackage.mak)
+Fmlocs := $(foreach dir, $(BOXLIB_CORE), $(FBOXLIB_HOME)/$(dir))
 
 
 # include the necessary GPackage.mak files that define this setup
@@ -33,7 +33,7 @@ all: python_module
 python_module: $(objects)
 	f2py3 --fcompiler=gfortran --f90flags="-J t/Linux.gfortran/m/" -c fsnapshot.f90 -m fsnapshot $(objects) -lstdc++
 
-include $(BOXLIB_HOME)/Tools/F_mk/GMakerules.mak
+include $(FBOXLIB_HOME)/Tools/F_mk/GMakerules.mak
 
 
 clean::
